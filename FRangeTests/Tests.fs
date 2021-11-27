@@ -10,18 +10,17 @@ open Range
 type UnequalPair<'t> =
     MkUnequalPair of 't * 't
 
+type SpanContains =
+    MkSpanContains of (int * int) * int
+
 type Generators =
 
-    static member private UnequalPair(gen) =
-        {
-            new Arbitrary<_>() with
-                override _.Generator =
-                    gen
-                        |> Gen.two
-                        |> Gen.filter (fun (x, y) -> x <> y)
-                        |> Gen.map (fun (x, y) -> MkUnequalPair (x, y))
-                override _.Shrinker(_) = Seq.empty
-        }
+    static member private UnequalPair(g) =
+        gen {
+            let! x = g
+            let! y = g |> Gen.where ((<>) x)
+            return MkUnequalPair (x, y)
+        } |> Arb.fromGen
 
     static member UnequalPairInt() =
         Arb.Default.Int32().Generator
@@ -30,6 +29,15 @@ type Generators =
     static member UnequalPairDateTime() =
         Arb.Default.DateTime().Generator
             |> Generators.UnequalPair
+
+    static member SpanContains() =
+        let g = Arb.Default.Int32().Generator
+        gen {
+            let! lower = g
+            let! upper = g |> Gen.where (fun x -> x >= lower)
+            let! middle = Gen.choose (lower, upper)
+            return MkSpanContains ((lower, upper), middle)
+        } |> Arb.fromGen
 
 module Tests =
 
@@ -45,12 +53,23 @@ module Tests =
         ``Singleton in range`` x
 
     let private ``Singleton not in range`` (MkUnequalPair (first, second)) =
-        not <| inRange second (SingletonRange first)
+        first
+            |> SingletonRange
+            |> inRange second
+            |> not
 
-    [<Property(Arbitrary = [| typeof<Generators> |])>]
+    [<Property>]
     let ``Singleton int not in range`` (pair : UnequalPair<int>) =
         ``Singleton not in range`` pair
 
-    [<Property(Arbitrary = [| typeof<Generators> |])>]
+    [<Property>]
     let ``Singleton DateTime not in range`` (pair : UnequalPair<DateTime>) =
         ``Singleton not in range`` pair
+
+    [<Property>]
+    let ``Span contains`` (MkSpanContains ((lower, upper), middle)) =
+        SpanRange (Inclusive lower, Inclusive upper)
+            |> inRange middle
+
+    [<assembly: Properties(Arbitrary = [| typeof<Generators> |])>]
+    do ()
