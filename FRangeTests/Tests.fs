@@ -1,11 +1,9 @@
 namespace FRange
 
-open System
+#nowarn "40"   // allow recursive values
 
 open FsCheck
 open FsCheck.Xunit
-
-open Range
 
 type UnequalPair<'t> =
     MkUnequalPair of 't * 't
@@ -15,61 +13,37 @@ type SpanContains =
 
 type Generators =
 
-    static member private UnequalPair(g) =
-        gen {
-            let! x = g
-            let! y = g |> Gen.where ((<>) x)
-            return MkUnequalPair (x, y)
-        } |> Arb.fromGen
-
-    static member UnequalPairInt() =
-        Arb.Default.Int32().Generator
-            |> Generators.UnequalPair
-
-    static member UnequalPairDateTime() =
-        Arb.Default.DateTime().Generator
-            |> Generators.UnequalPair
-
-    static member SpanContains() =
-        let g = Arb.Default.Int32().Generator
-        gen {
-            let! lower = g
-            let! upper = g |> Gen.where (fun x -> x >= lower)
-            let! middle = Gen.choose (lower, upper)
-            return MkSpanContains ((lower, upper), middle)
-        } |> Arb.fromGen
+    static member Range() =
+        let genBoundOpt =
+            Arb.from<int>.Generator
+                |> Gen.apply (Gen.elements [ Inclusive; Exclusive ])
+                |> Gen.optionOf
+        let rec genRange =
+            gen {
+                let! lowerOpt = genBoundOpt
+                let! upperOpt = genBoundOpt
+                match Range.tryCreate lowerOpt upperOpt with
+                    | Some range -> return range
+                    | None -> return! genRange
+            }
+        genRange |> Arb.fromGen
 
 module Tests =
 
-    let private ``Singleton in range`` x =
-        inRange x (SingletonRange x)
+    [<Property>]
+    let ``Lower value <= upper value`` (range : Range<int>) =
+        match range.LowerBoundOpt, range.UpperBoundOpt with
+            | Some lower, Some upper ->
+                lower.Value <= upper.Value
+            | _ -> true
 
     [<Property>]
-    let ``Singleton int in range`` (x : int) =
-        ``Singleton in range`` x
+    let ``Bounds are in or out of range`` (range : Range<int>) =
+        let test = function
+            | Some (Inclusive x) -> range |> Range.inRange x
+            | Some (Exclusive x) -> range |> Range.inRange x |> not
+            | None -> true
+        test range.LowerBoundOpt && test range.UpperBoundOpt
 
-    [<Property>]
-    let ``Singleton DateTime in range`` (x : DateTime) =
-        ``Singleton in range`` x
-
-    let private ``Singleton not in range`` (MkUnequalPair (first, second)) =
-        first
-            |> SingletonRange
-            |> inRange second
-            |> not
-
-    [<Property>]
-    let ``Singleton int not in range`` (pair : UnequalPair<int>) =
-        ``Singleton not in range`` pair
-
-    [<Property>]
-    let ``Singleton DateTime not in range`` (pair : UnequalPair<DateTime>) =
-        ``Singleton not in range`` pair
-
-    [<Property>]
-    let ``Span contains`` (MkSpanContains ((lower, upper), middle)) =
-        SpanRange (Inclusive lower, Inclusive upper)
-            |> inRange middle
-
-    [<assembly: Properties(Arbitrary = [| typeof<Generators> |])>]
+    [<assembly: Properties(Arbitrary = [| typeof<Generators> |], MaxTest = 10000)>]
     do ()
