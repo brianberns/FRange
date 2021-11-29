@@ -5,8 +5,8 @@ module Program =
     [<EntryPoint>] 
     let main args =
         [
-            Range.create (Some (Inclusive 1)) (Some (Inclusive 2))
-            Range.create (Some (Inclusive 3)) (Some (Inclusive 4))
+            Range.create (Some (Inclusive 0)) None
+            Range.create None (Some (Exclusive 0))
         ]
             |> Range.union
             |> printfn "%A"

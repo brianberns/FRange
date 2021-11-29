@@ -54,28 +54,6 @@ module Range =
                 | None -> true
         inRangeLower && inRangeUpper
 
-    let tryUnion rangeA rangeB =
-        let points =
-            [|
-                (rangeA._LowerOpt, -1, 0)
-                (rangeB._LowerOpt, -1, 1)
-                (rangeA._UpperOpt,  1, 0)
-                (rangeB._UpperOpt,  1, 1)
-            |]
-                |> Seq.map (fun (boundOpt, dir, owner) ->
-                    (BoundDir.create boundOpt dir), owner)
-                |> Seq.sortBy fst
-                |> Seq.toArray
-        assert(points.Length = 4)
-        let lowerBoundDir, owner0 = points[0]
-        assert(lowerBoundDir.Direction = -1)
-        let _, owner1 = points[1]
-        if owner0 = owner1 then None
-        else
-            let upperBoundDir, _ = points[3]
-            assert(upperBoundDir.Direction = 1)
-            Some (create lowerBoundDir.BoundOpt upperBoundDir.BoundOpt)
-
     let private toBoundDirs range =
         seq {
             range._LowerOpt, -1
@@ -98,10 +76,10 @@ module Range =
                         match boundDir.Direction with
                             | -1 ->
                                 assert(active.Contains(idx) |> not)
-                                let active' = active.Add(idx)
                                 let lowerBoundOpt' =
-                                    lowerBoundOpt
-                                        |> Option.orElse boundDir.BoundOpt
+                                    if active.IsEmpty then boundDir.BoundOpt
+                                    else lowerBoundOpt
+                                let active' = active.Add(idx)
                                 active', lowerBoundOpt', outRanges
                             |  1 ->
                                 let active' = active.Remove(idx)

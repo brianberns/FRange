@@ -39,34 +39,34 @@ module Tests =
             | None -> true
         test range.LowerOpt && test range.UpperOpt
 
+    module Range =
+
+        let union2 rangeA rangeB =
+            Range.union [ rangeA; rangeB ]
+
     [<Property>]
     let ``Union of two ranges contains both ranges`` (rangeA : Range<int>) rangeB =
-        match Range.tryUnion rangeA rangeB with
-            | Some union ->
-                let test range =
-                    match Range.tryUnion range union with
-                        | Some union' -> union' = union
-                        | None -> false
-                test rangeA && test rangeB
-            | None -> true
+        let ranges = Range.union2 rangeA rangeB
+        let test range =
+            Range.union (range :: ranges) = ranges
+        test rangeA && test rangeB
 
     [<Property>]
     let ``Union of range with itself is identity`` (range : Range<int>) =
-        Range.tryUnion range range = Some range
+        Range.union2 range range = [ range ]
 
     [<Property>]
     let ``Union is commutative`` (rangeA : Range<int>) rangeB =
-        Range.tryUnion rangeA rangeB
-            = Range.tryUnion rangeB rangeA
+        Range.union2 rangeA rangeB
+            = Range.union2 rangeB rangeA
 
     [<Property>]
     let ``Union is associative`` (rangeA : Range<int>) rangeB rangeC =
-        match Range.tryUnion rangeA rangeB, Range.tryUnion rangeB rangeC with
-            | Some rangeAB, Some rangeBC ->
-                match Range.tryUnion rangeAB rangeC, Range.tryUnion rangeA rangeBC with
-                    | Some range1, Some range2 -> range1 = range2
-                    | _ -> true
-            | _ -> true
+        let rangesAB = Range.union2 rangeA rangeB
+        let rangesBC = Range.union2 rangeB rangeC
+        let union0 = Range.union (rangesAB @ [ rangeC ])
+        let union1 = Range.union (rangeA :: rangesBC)
+        union0 = union1
 
     [<assembly: Properties(
         Arbitrary = [| typeof<Generators> |],

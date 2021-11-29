@@ -22,9 +22,9 @@ type private BoundDir<'t when 't : comparison> =
     member this.CompareTo(other) =
         let toTuple boundDir =
             match boundDir.BoundOpt with
-                | None -> boundDir.Direction, None, 0
-                | Some (Inclusive value) -> 0, Some value,  boundDir.Direction
-                | Some (Exclusive value) -> 0, Some value, -boundDir.Direction
+                | None -> boundDir.Direction, None, 0, boundDir.Direction
+                | Some (Inclusive value) -> 0, Some value,  boundDir.Direction, boundDir.Direction
+                | Some (Exclusive value) -> 0, Some value, -boundDir.Direction, boundDir.Direction
         compare (toTuple this) (toTuple other)
 
     member this.CompareTo(other : obj) =
