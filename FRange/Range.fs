@@ -1,62 +1,14 @@
 ﻿namespace FRange
 
-open System
-
-[<NoComparison>]
-type Bound<'t> =
-    | Inclusive of 't
-    | Exclusive of 't
-
-    member bound.Value =
-        match bound with
-            | Inclusive x
-            | Exclusive x -> x
-
 [<NoComparison>]
 type Range<'t when 't : comparison> =
     private {
-        LowerOpt : Option<Bound<'t>>
-        UpperOpt : Option<Bound<'t>>
+        _LowerOpt : Option<Bound<'t>>
+        _UpperOpt : Option<Bound<'t>>
     }
 
-[<CustomComparison; CustomEquality>]
-type private BoundDir<'t when 't : comparison> =
-    {
-        BoundOpt : Option<Bound<'t>>
-        Direction : int
-    }
-
-    member this.CompareTo(other) =
-        let toTuple boundDir =
-            match boundDir.BoundOpt with
-                | None -> boundDir.Direction, None, 0
-                | Some (Inclusive value) -> 0, Some value,  boundDir.Direction
-                | Some (Exclusive value) -> 0, Some value, -boundDir.Direction
-        compare (toTuple this) (toTuple other)
-
-    member this.CompareTo(other : obj) =
-        (this :> IComparable<BoundDir<'t>>).CompareTo(other :?> BoundDir<'t>)
-
-    override this.Equals(other) =
-        this.CompareTo(other) = 0
-
-    override _.GetHashCode() =
-        raise <| NotImplementedException()
-
-    interface IComparable<BoundDir<'t>> with
-        member this.CompareTo(other) = this.CompareTo(other)
-
-    interface IComparable with
-        member this.CompareTo(other) = this.CompareTo(other)
-
-module private BoundDir =
-
-    let create boundOpt direction =
-        assert(direction = 1 || direction = -1)
-        {
-            BoundOpt = boundOpt
-            Direction = direction
-        }
+    member range.LowerOpt = range._LowerOpt
+    member range.UpperOpt = range._UpperOpt
 
 module Range =
 
@@ -72,8 +24,8 @@ module Range =
                 | _ -> true
         if isValid then
             Some {
-                LowerOpt = lowerOpt
-                UpperOpt = upperOpt
+                _LowerOpt = lowerOpt
+                _UpperOpt = upperOpt
             }
         else None
 
@@ -91,27 +43,24 @@ module Range =
 
     let contains x range =
         let inRangeLower =
-            match range.LowerOpt with
+            match range._LowerOpt with
                 | Some (Inclusive lower) -> x >= lower
                 | Some (Exclusive lower) -> x > lower
                 | None -> true
         let inRangeUpper =
-            match range.UpperOpt with
+            match range._UpperOpt with
                 | Some (Inclusive upper) -> x <= upper
                 | Some (Exclusive upper) -> x < upper
                 | None -> true
         inRangeLower && inRangeUpper
 
-    let (|Value|) (bound : Bound<_>) =
-        bound.Value
-
     let tryUnion rangeA rangeB =
         let points =
             [|
-                (rangeA.LowerOpt, -1, 0)
-                (rangeB.LowerOpt, -1, 1)
-                (rangeA.UpperOpt,  1, 0)
-                (rangeB.UpperOpt,  1, 1)
+                (rangeA._LowerOpt, -1, 0)
+                (rangeB._LowerOpt, -1, 1)
+                (rangeA._UpperOpt,  1, 0)
+                (rangeB._UpperOpt,  1, 1)
             |]
                 |> Seq.map (fun (boundOpt, dir, owner) ->
                     (BoundDir.create boundOpt dir), owner)
@@ -127,7 +76,43 @@ module Range =
             assert(upperBoundDir.Direction = 1)
             Some (create lowerBoundDir.BoundOpt upperBoundDir.BoundOpt)
 
-type Range<'t when 't : comparison> with
+    let private toBoundDirs range =
+        seq {
+            range._LowerOpt, -1
+            range._UpperOpt,  1
+        } |> Seq.map (fun (boundOpt, dir) ->
+            BoundDir.create boundOpt dir)
 
-    member range.LowerBoundOpt = range.LowerOpt
-    member range.UpperBoundOpt = range.UpperOpt
+    let union ranges =
+        let pairs =
+            ranges
+                |> Seq.indexed
+                |> Seq.collect (fun (idx, range) ->
+                    toBoundDirs range
+                        |> Seq.map (fun boundDir -> idx, boundDir))
+                |> Seq.sortBy snd
+        let active, lowerBoundOpt, outRanges =
+            ((Set.empty, None, []), pairs)
+                ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
+                    let active', lowerBoundOpt', outRanges' =
+                        match boundDir.Direction with
+                            | -1 ->
+                                assert(active.Contains(idx) |> not)
+                                let active' = active.Add(idx)
+                                let lowerBoundOpt' =
+                                    lowerBoundOpt
+                                        |> Option.orElse boundDir.BoundOpt
+                                active', lowerBoundOpt', outRanges
+                            |  1 ->
+                                let active' = active.Remove(idx)
+                                let lowerBoundOpt', outRanges' =
+                                    if active'.IsEmpty then
+                                        let range = create lowerBoundOpt boundDir.BoundOpt
+                                        None, range :: outRanges
+                                    else lowerBoundOpt, outRanges
+                                active', lowerBoundOpt', outRanges'
+                            |  _ -> failwith "Unexpected"
+                    active', lowerBoundOpt', outRanges')
+        assert(active.IsEmpty)
+        assert(lowerBoundOpt.IsNone)
+        outRanges |> List.rev

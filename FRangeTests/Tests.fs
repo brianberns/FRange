@@ -26,7 +26,7 @@ module Tests =
 
     [<Property>]
     let ``Lower value <= upper value`` (range : Range<int>) =
-        match range.LowerBoundOpt, range.UpperBoundOpt with
+        match range.LowerOpt, range.UpperOpt with
             | Some lower, Some upper ->
                 lower.Value <= upper.Value
             | _ -> true
@@ -37,7 +37,7 @@ module Tests =
             | Some (Inclusive x) -> range |> Range.contains x
             | Some (Exclusive x) -> range |> Range.contains x |> not
             | None -> true
-        test range.LowerBoundOpt && test range.UpperBoundOpt
+        test range.LowerOpt && test range.UpperOpt
 
     [<Property>]
     let ``Union of two ranges contains both ranges`` (rangeA : Range<int>) rangeB =
