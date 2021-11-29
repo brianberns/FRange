@@ -81,8 +81,20 @@ module Tests =
         test rangeA && test rangeB
 
     [<Property>]
-    let ``Union of range with itself is identity`` (range : Range<int>) =
+    let ``Union of no ranges is empty`` (range : Range<int>) =
+        Range.union [] = []
+
+    [<Property>]
+    let ``Union of range by itself is self`` (range : Range<int>) =
+        Range.union [ range ] = [ range ]
+
+    [<Property>]
+    let ``Union of range with itself is self`` (range : Range<int>) =
         Range.union2 range range = [ range ]
+
+    [<Property>]
+    let ``Union of range with infinite range is infinite`` (range : Range<int>) =
+        Range.union2 range Range.infinite = [ Range.infinite ]
 
     [<Property>]
     let ``Union is commutative`` (rangeA : Range<int>) rangeB =
