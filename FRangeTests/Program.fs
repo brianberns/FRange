@@ -4,10 +4,8 @@ module Program =
 
     [<EntryPoint>] 
     let main args =
-        [
-            Range.create (Some (Inclusive 0)) None
-            Range.create None (Some (Exclusive 0))
-        ]
-            |> Range.union
+        let rangeA = 0 +-+ 1
+        let rangeB = 1 +-+ 2
+        Range.intersect2 rangeA rangeB
             |> printfn "%A"
         0

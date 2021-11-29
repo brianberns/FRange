@@ -28,6 +28,12 @@ type private BoundDir<'t when 't : comparison> =
 
         /// -1 -> lower bound, 1 -> upper bound.
         Direction : int
+
+        /// Inclusive lower bound is less/more than an exclusive upper bound
+        /// of the same value:
+        /// *  1 -> less than
+        /// * -1 -> more than
+        Overlap : int
     }
 
     /// Compares two directed bounds in the following order:
@@ -36,8 +42,8 @@ type private BoundDir<'t when 't : comparison> =
     /// * Finite bonds are sorted by value.
     /// * An inclusive bound is extends farther in its direction than
     ///   an exclusive bound of the same value.
-    /// * An inclusive lower bound is less than an exclusive upper
-    ///   bound of the same value. This ensures that adjacent ranges
+    /// * An inclusive lower bound is optionally less/more than an exclusive
+    ///   upper bound of the same value. This ensures that adjacent ranges
     ///   overlap correctly.
     member this.CompareTo(other) =
         let toTuple boundDir =
@@ -45,9 +51,15 @@ type private BoundDir<'t when 't : comparison> =
                 | None ->
                     boundDir.Direction, None, 0, boundDir.Direction
                 | Some (Inclusive value) ->
-                    0, Some value,  boundDir.Direction, boundDir.Direction
+                    0,
+                    Some value,
+                    boundDir.Direction,
+                    boundDir.Overlap * boundDir.Direction
                 | Some (Exclusive value) ->
-                    0, Some value, -boundDir.Direction, boundDir.Direction
+                    0,
+                    Some value,
+                    -boundDir.Direction,
+                    boundDir.Overlap * boundDir.Direction
         compare (toTuple this) (toTuple other)
 
     /// Compares two bounds.
@@ -73,10 +85,13 @@ type private BoundDir<'t when 't : comparison> =
 module private BoundDir =
 
     /// Creates a directed bound.
-    let create boundOpt direction =
+    let create boundOpt direction overlap =
         if direction <> 1 && direction <> -1 then
             invalidArg (nameof direction) "Invalid direction"
+        if overlap <> 1 && overlap <> -1 then
+            invalidArg (nameof overlap) "Invalid overlap"
         {
             BoundOpt = boundOpt
             Direction = direction
+            Overlap = overlap
         }

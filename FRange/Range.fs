@@ -73,17 +73,17 @@ module Range =
         inRangeLower && inRangeUpper
 
     /// Indexes and sorts the bounds of the given ranges.
-    let private toIndexedBoundDirs ranges =
+    let private toIndexedBoundDirs ranges overlap =
         seq {
             for idx, range in Seq.indexed ranges do
-                yield idx, BoundDir.create range._LowerOpt -1
-                yield idx, BoundDir.create range._UpperOpt  1
+                yield idx, BoundDir.create range._LowerOpt -1 overlap
+                yield idx, BoundDir.create range._UpperOpt  1 overlap
         } |> Seq.sortBy snd
 
     /// Computes the union of the given ranges.
     let union ranges =
         let active, lowerBoundOpt, outRanges =
-            ((Set.empty, None, []), toIndexedBoundDirs ranges)
+            ((Set.empty, None, []), toIndexedBoundDirs ranges 1)
                 ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
                     match boundDir.Direction with
 
@@ -117,7 +117,7 @@ module Range =
     let intersect ranges =
         let ranges = Seq.toArray ranges
         let active, lowerBoundOpt, outRanges =
-            ((Set.empty, None, []), toIndexedBoundDirs ranges)
+            ((Set.empty, None, []), toIndexedBoundDirs ranges -1)
                 ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
                     match boundDir.Direction with
 

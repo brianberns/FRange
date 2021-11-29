@@ -155,3 +155,55 @@ module UnionTests =
             && Range.union2 rangeABIncl rangeBCExcl = [ rangeAC ]
             && Range.union2 rangeABExcl rangeBCIncl = [ rangeAC ]
             && Range.union2 rangeABExcl rangeBCExcl = [ rangeABExcl; rangeBCExcl ]
+
+module IntersectTests =
+
+    [<Property>]
+    let ``Intersect of ranges is a subset of all ranges`` (ranges : List<Range<int>>) =
+        let intersect = Range.intersect ranges
+        ranges
+            |> Seq.forall (fun range ->
+                Range.intersect (range :: intersect) = intersect)
+
+    [<Property>]
+    let ``Intersect of no ranges is empty`` () =
+        Range.intersect [] = []
+
+    [<Property>]
+    let ``Intersect of range by itself is self`` (range : Range<int>) =
+        Range.intersect [ range ] = [ range ]
+
+    [<Property>]
+    let ``Intersect of range with itself is self`` (range : Range<int>) =
+        Range.intersect2 range range = [ range ]
+
+    [<Property>]
+    let ``Intersect of range with infinite range is self`` (range : Range<int>) =
+        Range.intersect2 range Range.infinite = [ range ]
+
+    [<Property>]
+    let ``Intersect is commutative`` (rangeA : Range<int>) rangeB =
+        Range.intersect2 rangeA rangeB
+            = Range.intersect2 rangeB rangeA
+
+    [<Property>]
+    let ``Intersect is associative`` (rangeA : Range<int>) rangeB rangeC =
+        let rangesAB = Range.intersect2 rangeA rangeB
+        let rangesBC = Range.intersect2 rangeB rangeC
+        let intersect0 = Range.intersect (rangesAB @ [ rangeC ])
+        let intersect1 = Range.intersect (rangeA :: rangesBC)
+        intersect0 = intersect1
+
+    [<Property>]
+    let ``Intersect of adjancent ranges is a point at most`` triplet =
+        let boundAOpt = triplet.AOpt |> Option.map Inclusive
+        let boundCOpt = triplet.COpt |> Option.map Inclusive
+        let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
+        let rangeABExcl = Range.create boundAOpt (Some (Exclusive triplet.B))
+        let rangeBCIncl = Range.create (Some (Inclusive triplet.B)) boundCOpt
+        let rangeBCExcl = Range.create (Some (Exclusive triplet.B)) boundCOpt
+        let rangeB = Range.singleton triplet.B
+        Range.intersect2 rangeABIncl rangeBCIncl = [ rangeB ]
+            && Range.intersect2 rangeABIncl rangeBCExcl = [ rangeB ]
+            && Range.intersect2 rangeABExcl rangeBCIncl = [ rangeB ]
+            && Range.intersect2 rangeABExcl rangeBCExcl = [ ]
