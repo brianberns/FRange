@@ -29,7 +29,7 @@ module Range =
         let isValid =
             match lowerOpt, upperOpt with
                 | Some (Inclusive lower), Some (Inclusive higher) ->
-                    lower <= higher
+                    lower <= higher   // range includes a single point
                 | Some (Inclusive lower), Some (Exclusive higher)
                 | Some (Exclusive lower), Some (Inclusive higher)
                 | Some (Exclusive lower), Some (Exclusive higher) ->
@@ -42,18 +42,23 @@ module Range =
             }
         else None
 
+    /// Creates a range with the given optional bounds. An exception
+    /// is thrown if the range is invalid.
     let create lowerOpt upperOpt =
         tryCreate lowerOpt upperOpt
             |> Option.defaultWith (fun () ->
                 failwith "Invalid range")
 
+    /// Creates a range that contains a single point.
     let singleton x =
         let bound = Some (Inclusive x)
         create bound bound
 
+    /// A range that's infinite (i.e. unbounded) in both directions.
     let infinite<'t when 't : comparison> : Range<'t> =
         create None None
 
+    /// Indicates whether the given range contains the given point.
     let contains x range =
         let inRangeLower =
             match range._LowerOpt with
@@ -67,43 +72,44 @@ module Range =
                 | None -> true
         inRangeLower && inRangeUpper
 
-    let private toBoundDirs range =
+    /// Indexes and sorts the bounds of the given ranges.
+    let private toIndexedBoundDirs ranges =
         seq {
-            range._LowerOpt, -1
-            range._UpperOpt,  1
-        } |> Seq.map (fun (boundOpt, dir) ->
-            BoundDir.create boundOpt dir)
+            for idx, range in Seq.indexed ranges do
+                yield idx, BoundDir.create range._LowerOpt -1
+                yield idx, BoundDir.create range._UpperOpt  1
+        } |> Seq.sortBy snd
 
+    /// Computes the union of the given ranges.
     let union ranges =
-        let pairs =
-            ranges
-                |> Seq.indexed
-                |> Seq.collect (fun (idx, range) ->
-                    toBoundDirs range
-                        |> Seq.map (fun boundDir -> idx, boundDir))
-                |> Seq.sortBy snd
         let active, lowerBoundOpt, outRanges =
-            ((Set.empty, None, []), pairs)
+            ((Set.empty, None, []), toIndexedBoundDirs ranges)
                 ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
-                    let active', lowerBoundOpt', outRanges' =
-                        match boundDir.Direction with
-                            | -1 ->
-                                assert(active.Contains(idx) |> not)
-                                let lowerBoundOpt' =
-                                    if active.IsEmpty then boundDir.BoundOpt
-                                    else lowerBoundOpt
-                                let active' = active.Add(idx)
-                                active', lowerBoundOpt', outRanges
-                            |  1 ->
-                                let active' = active.Remove(idx)
-                                let lowerBoundOpt', outRanges' =
-                                    if active'.IsEmpty then
-                                        let range = create lowerBoundOpt boundDir.BoundOpt
-                                        None, range :: outRanges
-                                    else lowerBoundOpt, outRanges
-                                active', lowerBoundOpt', outRanges'
-                            |  _ -> failwith "Unexpected"
-                    active', lowerBoundOpt', outRanges')
+                    match boundDir.Direction with
+
+                            // lower bound activates its range
+                        | -1 ->
+                                // if no ranges currently active, this lower bound starts a new output range
+                            let lowerBoundOpt' =
+                                if active.IsEmpty then boundDir.BoundOpt
+                                else lowerBoundOpt
+
+                            assert(active.Contains(idx) |> not)
+                            let active' = active.Add(idx)
+                            active', lowerBoundOpt', outRanges
+
+                            // upper bound deactivates its range
+                        |  1 ->
+                            assert(active.Contains(idx))
+                            let active' = active.Remove(idx)
+
+                                // if no ranges currently active, this upper bound ends a new output range
+                            if active'.IsEmpty then
+                                let range = create lowerBoundOpt boundDir.BoundOpt
+                                active', None, range :: outRanges
+                            else active', lowerBoundOpt, outRanges
+
+                        |  _ -> failwith "Unexpected")
         assert(active.IsEmpty)
         assert(lowerBoundOpt.IsNone)
-        outRanges |> List.rev
+        List.rev outRanges
