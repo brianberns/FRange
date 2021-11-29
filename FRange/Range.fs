@@ -114,6 +114,44 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
+    let intersect ranges =
+        let ranges = Seq.toArray ranges
+        let active, lowerBoundOpt, outRanges =
+            ((Set.empty, None, []), toIndexedBoundDirs ranges)
+                ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
+                    match boundDir.Direction with
+
+                            // lower bound activates its range
+                        | -1 ->
+                            assert(active.Contains(idx) |> not)
+                            let active' = active.Add(idx)
+
+                                // if all ranges currently active, this lower bound starts the output range
+                            let lowerBoundOpt' =
+                                if active'.Count = ranges.Length then
+                                    boundDir.BoundOpt
+                                else lowerBoundOpt
+
+                            active', lowerBoundOpt', outRanges
+
+                            // upper bound deactivates its range
+                        |  1 ->
+                                // if all ranges currently active, this upper bound ends the output range
+                            let lowerBoundOpt', outRanges' =
+                                if active.Count = ranges.Length then
+                                    let range = create lowerBoundOpt boundDir.BoundOpt
+                                    None, range :: outRanges
+                                else lowerBoundOpt, outRanges
+
+                            assert(active.Contains(idx))
+                            active.Remove(idx), lowerBoundOpt', outRanges'
+
+                        |  _ -> failwith "Unexpected")
+        assert(active.IsEmpty)
+        assert(lowerBoundOpt.IsNone)
+        assert(outRanges.Length <= 1)
+        outRanges
+
 [<AutoOpen>]
 module RangeOperators =
 
@@ -139,7 +177,7 @@ module RangeOperators =
 
     /// Creates an exclusive-unbounded range.
     let (!*-) lower =
-        Range.create (Some (Inclusive lower)) None
+        Range.create (Some (Exclusive lower)) None
 
     /// Creates an unbounded-inclusive range.
     let (!-+) upper =
@@ -147,4 +185,4 @@ module RangeOperators =
 
     /// Creates an unbounded-exclusive range.
     let (!-*) upper =
-        Range.create None (Some (Inclusive upper))
+        Range.create None (Some (Exclusive upper))

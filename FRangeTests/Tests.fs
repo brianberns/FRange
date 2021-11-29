@@ -28,6 +28,9 @@ module Range =
     let union2 rangeA rangeB =
         Range.union [ rangeA; rangeB ]
 
+    let intersect2 rangeA rangeB =
+        Range.intersect [ rangeA; rangeB ]
+
 type Triplet =
     {
         AOpt : Option<int>
@@ -93,14 +96,13 @@ module RangeTests =
         let rangeC = 1 +-* 4
         Range.union2 rangeA rangeB = [ rangeC ]
 
-    (*
     [<Property>]
     let ``Unbounded operators`` () =
         let rangeA = !-+ 1
         let rangeB = !*- -1
         let rangeC = -1 *-+ 1
-        Range.intersect2 rangeA rangeB = [ rangeC ]
-    *)
+        let intersect = Range.intersect2 rangeA rangeB
+        intersect = [ rangeC ]
 
 module UnionTests =
 
