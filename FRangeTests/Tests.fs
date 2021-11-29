@@ -8,16 +8,9 @@ open FsCheck.Xunit
 module Int =
     let gen = Arb.from<int>.Generator
 
-type Triplet =
-    {
-        AOpt : Option<int>
-        B : int
-        COpt : Option<int>
-    }
+module Range =
 
-type Generators =
-
-    static member Range() =
+    let arb =
         let genBoundOpt =
             Int.gen
                 |> Gen.apply (Gen.elements [ Inclusive; Exclusive ])
@@ -32,9 +25,20 @@ type Generators =
             }
         genRange |> Arb.fromGen
 
-    static member Triplet() =
+    let union2 rangeA rangeB =
+        Range.union [ rangeA; rangeB ]
+
+type Triplet =
+    {
+        AOpt : Option<int>
+        B : int
+        COpt : Option<int>
+    }
+
+    static member Arb =
         gen {
-            let! aOpt = Int.gen |> Gen.optionOf
+            let! aOpt =
+                Int.gen |> Gen.optionOf
             let! b =
                 Int.gen
                     |> Gen.where (fun b ->
@@ -51,7 +55,21 @@ type Generators =
             return { AOpt = aOpt; B = b; COpt = cOpt }
         } |> Arb.fromGen
 
-module Tests =
+type Generators =
+    static member Range() = Range.arb
+    static member Triplet() = Triplet.Arb
+
+module Generators =
+
+    [<assembly: Properties(
+        Arbitrary = [| typeof<Generators> |],
+        MaxTest = 1000)>]
+    do ()
+
+module RangeTests =
+
+    type Generators =
+        static member Range() = Range.arb
 
     [<Property>]
     let ``Lower value <= upper value`` (range : Range<int>) =
@@ -69,6 +87,24 @@ module Tests =
         test range.LowerOpt && test range.UpperOpt
 
     [<Property>]
+    let ``Bounded operators`` () =
+        let rangeA = 1 +-+ 3
+        let rangeB = 2 *-* 4
+        let rangeC = 1 +-* 4
+        Range.union2 rangeA rangeB = [ rangeC ]
+
+    (*
+    [<Property>]
+    let ``Unbounded operators`` () =
+        let rangeA = !-+ 1
+        let rangeB = !*- -1
+        let rangeC = -1 *-+ 1
+        Range.intersect2 rangeA rangeB = [ rangeC ]
+    *)
+
+module UnionTests =
+
+    [<Property>]
     let ``Union of ranges is a superset of all ranges`` (ranges : List<Range<int>>) =
         let union = Range.union ranges
         ranges
@@ -76,17 +112,12 @@ module Tests =
                 Range.union (range :: union) = union)
 
     [<Property>]
-    let ``Union of no ranges is empty`` =
+    let ``Union of no ranges is empty`` () =
         Range.union [] = []
 
     [<Property>]
     let ``Union of range by itself is self`` (range : Range<int>) =
         Range.union [ range ] = [ range ]
-
-    module Range =
-
-        let union2 rangeA rangeB =
-            Range.union [ rangeA; rangeB ]
 
     [<Property>]
     let ``Union of range with itself is self`` (range : Range<int>) =
@@ -122,8 +153,3 @@ module Tests =
             && Range.union2 rangeABIncl rangeBCExcl = [ rangeAC ]
             && Range.union2 rangeABExcl rangeBCIncl = [ rangeAC ]
             && Range.union2 rangeABExcl rangeBCExcl = [ rangeABExcl; rangeBCExcl ]
-
-    [<assembly: Properties(
-        Arbitrary = [| typeof<Generators> |],
-        MaxTest = 10000)>]
-    do ()

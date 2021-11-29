@@ -113,3 +113,38 @@ module Range =
         assert(active.IsEmpty)
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
+
+[<AutoOpen>]
+module RangeOperators =
+
+    /// Creates an inclusive-inclusive range.
+    let (+-+) lower upper =
+        Range.create (Some (Inclusive lower)) (Some (Inclusive upper))
+
+    /// Creates an exclusive-inclusive range.
+    let ( *-+) lower upper =
+        Range.create (Some (Exclusive lower)) (Some (Inclusive upper))
+
+    /// Creates an inclusive-inclusive range.
+    let (+-*) lower upper =
+        Range.create (Some (Inclusive lower)) (Some (Exclusive upper))
+
+    /// Creates an exclusive-exclusive range.
+    let ( *-*) lower upper =
+        Range.create (Some (Exclusive lower)) (Some (Exclusive upper))
+
+    /// Creates an inclusive-unbounded range.
+    let (!+-) lower =
+        Range.create (Some (Inclusive lower)) None
+
+    /// Creates an exclusive-unbounded range.
+    let (!*-) lower =
+        Range.create (Some (Inclusive lower)) None
+
+    /// Creates an unbounded-inclusive range.
+    let (!-+) upper =
+        Range.create None (Some (Inclusive upper))
+
+    /// Creates an unbounded-exclusive range.
+    let (!-*) upper =
+        Range.create None (Some (Inclusive upper))
