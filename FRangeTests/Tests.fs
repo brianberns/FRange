@@ -5,12 +5,6 @@ namespace FRange
 open FsCheck
 open FsCheck.Xunit
 
-type UnequalPair<'t> =
-    MkUnequalPair of 't * 't
-
-type SpanContains =
-    MkSpanContains of (int * int) * int
-
 type Generators =
 
     static member Range() =
@@ -40,10 +34,41 @@ module Tests =
     [<Property>]
     let ``Bounds are in or out of range`` (range : Range<int>) =
         let test = function
-            | Some (Inclusive x) -> range |> Range.inRange x
-            | Some (Exclusive x) -> range |> Range.inRange x |> not
+            | Some (Inclusive x) -> range |> Range.contains x
+            | Some (Exclusive x) -> range |> Range.contains x |> not
             | None -> true
         test range.LowerBoundOpt && test range.UpperBoundOpt
 
-    [<assembly: Properties(Arbitrary = [| typeof<Generators> |], MaxTest = 10000)>]
+    [<Property>]
+    let ``Union of two ranges contains both ranges`` (rangeA : Range<int>) rangeB =
+        match Range.tryUnion rangeA rangeB with
+            | Some union ->
+                let test range =
+                    match Range.tryUnion range union with
+                        | Some union' -> union' = union
+                        | None -> false
+                test rangeA && test rangeB
+            | None -> true
+
+    [<Property>]
+    let ``Union of range with itself is identity`` (range : Range<int>) =
+        Range.tryUnion range range = Some range
+
+    [<Property>]
+    let ``Union is commutative`` (rangeA : Range<int>) rangeB =
+        Range.tryUnion rangeA rangeB
+            = Range.tryUnion rangeB rangeA
+
+    [<Property>]
+    let ``Union is associative`` (rangeA : Range<int>) rangeB rangeC =
+        match Range.tryUnion rangeA rangeB, Range.tryUnion rangeB rangeC with
+            | Some rangeAB, Some rangeBC ->
+                match Range.tryUnion rangeAB rangeC, Range.tryUnion rangeA rangeBC with
+                    | Some range1, Some range2 -> range1 = range2
+                    | _ -> true
+            | _ -> true
+
+    [<assembly: Properties(
+        Arbitrary = [| typeof<Generators> |],
+        MaxTest = 10000)>]
     do ()
