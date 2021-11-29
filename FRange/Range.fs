@@ -1,17 +1,30 @@
 ﻿namespace FRange
 
+/// A range of values, optionally bounded in one or both directions.
+/// Examples:
+/// * x < 3
+/// * 2 < x <= 4
+/// * 5 < x
 [<NoComparison>]
 type Range<'t when 't : comparison> =
     private {
+
+        /// Optional lower bound.
         _LowerOpt : Option<Bound<'t>>
+
+        /// Optional upper bound.
         _UpperOpt : Option<Bound<'t>>
     }
 
+    /// Optional lower bound.
     member range.LowerOpt = range._LowerOpt
+
+    /// Optional upper bound.
     member range.UpperOpt = range._UpperOpt
 
 module Range =
 
+    /// Tries to create a range with the given optional bounds.
     let tryCreate lowerOpt upperOpt =
         let isValid =
             match lowerOpt, upperOpt with

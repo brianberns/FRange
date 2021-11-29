@@ -68,25 +68,25 @@ module Tests =
             | None -> true
         test range.LowerOpt && test range.UpperOpt
 
-    module Range =
-
-        let union2 rangeA rangeB =
-            Range.union [ rangeA; rangeB ]
+    [<Property>]
+    let ``Union of ranges is a superset of all ranges`` (ranges : List<Range<int>>) =
+        let union = Range.union ranges
+        ranges
+            |> Seq.forall (fun range ->
+                Range.union (range :: union) = union)
 
     [<Property>]
-    let ``Union of two ranges contains both ranges`` (rangeA : Range<int>) rangeB =
-        let ranges = Range.union2 rangeA rangeB
-        let test range =
-            Range.union (range :: ranges) = ranges
-        test rangeA && test rangeB
-
-    [<Property>]
-    let ``Union of no ranges is empty`` (range : Range<int>) =
+    let ``Union of no ranges is empty`` =
         Range.union [] = []
 
     [<Property>]
     let ``Union of range by itself is self`` (range : Range<int>) =
         Range.union [ range ] = [ range ]
+
+    module Range =
+
+        let union2 rangeA rangeB =
+            Range.union [ rangeA; rangeB ]
 
     [<Property>]
     let ``Union of range with itself is self`` (range : Range<int>) =
@@ -110,7 +110,7 @@ module Tests =
         union0 = union1
 
     [<Property>]
-    let ``Merge adjancent ranges`` triplet =
+    let ``Union merges adjancent ranges`` triplet =
         let boundAOpt = triplet.AOpt |> Option.map Inclusive
         let boundCOpt = triplet.COpt |> Option.map Inclusive
         let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
