@@ -72,45 +72,43 @@ module Range =
                 | None -> true
         inRangeLower && inRangeUpper
 
-    /// Indexes and sorts the bounds of the given ranges.
-    let private toIndexedBoundDirs overlap ranges =
+    /// Sorts the bounds of the given ranges.
+    let private toBoundDirs overlap ranges =
         seq {
-            for idx, range in Seq.indexed ranges do
-                yield idx, BoundDir.create range._LowerOpt -1 overlap
-                yield idx, BoundDir.create range._UpperOpt  1 overlap
-        } |> Seq.sortBy snd
+            for range in ranges do
+                yield BoundDir.create range._LowerOpt -1 overlap
+                yield BoundDir.create range._UpperOpt  1 overlap
+        } |> Seq.sort
 
     /// Merges the given ranges where possible.
     let merge ranges =
-        let active, lowerBoundOpt, outRanges =
-            ((Set.empty, None, []), toIndexedBoundDirs 1 ranges)
-                ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
+        let activeCount, lowerBoundOpt, outRanges =
+            ((0, None, []), toBoundDirs 1 ranges)
+                ||> Seq.fold (fun (activeCount, lowerBoundOpt, outRanges) boundDir ->
                     match boundDir.Direction with
 
                             // lower bound activates its range
                         | -1 ->
                                 // if no ranges currently active, this lower bound starts a new output range
+                            assert(activeCount >= 0)
                             let lowerBoundOpt' =
-                                if active.IsEmpty then boundDir.BoundOpt
+                                if activeCount = 0 then boundDir.BoundOpt
                                 else lowerBoundOpt
-
-                            assert(active.Contains(idx) |> not)
-                            let active' = active.Add(idx)
-                            active', lowerBoundOpt', outRanges
+                            activeCount + 1, lowerBoundOpt', outRanges
 
                             // upper bound deactivates its range
                         |  1 ->
-                            assert(active.Contains(idx))
-                            let active' = active.Remove(idx)
+                            assert(activeCount > 0)
+                            let activeCount' = activeCount - 1
 
                                 // if no ranges currently active, this upper bound ends a new output range
-                            if active'.IsEmpty then
+                            if activeCount' = 0 then
                                 let range = create lowerBoundOpt boundDir.BoundOpt
-                                active', None, range :: outRanges
-                            else active', lowerBoundOpt, outRanges
+                                activeCount', None, range :: outRanges
+                            else activeCount', lowerBoundOpt, outRanges
 
                         |  _ -> failwith "Unexpected")
-        assert(active.IsEmpty)
+        assert(activeCount = 0)
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
