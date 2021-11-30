@@ -13,7 +13,7 @@ module Range =
     let arb =
         let genBoundOpt =
             Int.gen
-                |> Gen.apply (Gen.elements [ Inclusive; Exclusive ])
+                |> Gen.apply (Gen.elements [Inclusive; Exclusive])
                 |> Gen.optionOf
         let rec genRange =
             gen {
@@ -24,12 +24,6 @@ module Range =
                     | None -> return! genRange
             }
         genRange |> Arb.fromGen
-
-    let union2 rangeA rangeB =
-        Range.union [ rangeA; rangeB ]
-
-    let intersection2 rangeA rangeB =
-        Range.intersection [ rangeA; rangeB ]
 
 type Triplet =
     {
@@ -94,52 +88,55 @@ module RangeTests =
         let rangeA = 1 +-+ 3
         let rangeB = 2 *-* 4
         let rangeC = 1 +-* 4
-        Range.union2 rangeA rangeB = [ rangeC ]
+        Range.union [rangeA] [rangeB] = [rangeC]
 
+    (*
     [<Property>]
     let ``Unbounded operators`` () =
         let rangeA = !-+ 1
         let rangeB = !*- -1
         let rangeC = -1 *-+ 1
-        Range.intersection2 rangeA rangeB = Some rangeC
+        Range.intersection [rangeA] [rangeB] = [rangeC]
+    *)
+
+module MergeTests =
+
+    [<Property>]
+    let ``Merged ranges are a superset of all ranges`` (ranges : List<Range<int>>) =
+        let merged = Range.merge ranges
+        ranges
+            |> Seq.forall (fun range ->
+                Range.merge (range :: merged) = merged)
+
+    [<Property>]
+    let ``Merge of no ranges is empty`` () =
+        Range.merge [] = []
+
+    [<Property>]
+    let ``Merge of range by itself is self`` (range : Range<int>) =
+        Range.merge [range] = [range]
 
 module UnionTests =
 
     [<Property>]
-    let ``Union of ranges is a superset of all ranges`` (ranges : List<Range<int>>) =
-        let union = Range.union ranges
-        ranges
-            |> Seq.forall (fun range ->
-                Range.union (range :: union) = union)
+    let ``Union of range with itself is itself`` (range : Range<int>) =
+        Range.union [range] [range] = [range]
 
     [<Property>]
-    let ``Union of no ranges is empty`` () =
-        Range.union [] = []
+    let ``Union of ranges with infinite range is infinite`` (ranges : List<Range<int>>) =
+        Range.union ranges [Range.infinite] = [Range.infinite]
 
     [<Property>]
-    let ``Union of range by itself is self`` (range : Range<int>) =
-        Range.union [ range ] = [ range ]
+    let ``Union is commutative`` (rangesA : List<Range<int>>) rangesB =
+        Range.union rangesA rangesB
+            = Range.union rangesB rangesA
 
     [<Property>]
-    let ``Union of range with itself is self`` (range : Range<int>) =
-        Range.union2 range range = [ range ]
-
-    [<Property>]
-    let ``Union of range with infinite range is infinite`` (range : Range<int>) =
-        Range.union2 range Range.infinite = [ Range.infinite ]
-
-    [<Property>]
-    let ``Union is commutative`` (rangeA : Range<int>) rangeB =
-        Range.union2 rangeA rangeB
-            = Range.union2 rangeB rangeA
-
-    [<Property>]
-    let ``Union is associative`` (rangeA : Range<int>) rangeB rangeC =
-        let rangesAB = Range.union2 rangeA rangeB
-        let rangesBC = Range.union2 rangeB rangeC
-        let union0 = Range.union (rangesAB @ [ rangeC ])
-        let union1 = Range.union (rangeA :: rangesBC)
-        union0 = union1
+    let ``Union is associative`` (rangesA : List<Range<int>>) rangesB rangesC =
+        let rangesAB = Range.union rangesA rangesB
+        let rangesBC = Range.union rangesB rangesC
+        Range.union rangesAB rangesC =
+            Range.union rangesA rangesBC
 
     [<Property>]
     let ``Union merges adjancent ranges`` triplet =
@@ -150,11 +147,12 @@ module UnionTests =
         let rangeBCIncl = Range.create (Some (Inclusive triplet.B)) boundCOpt
         let rangeBCExcl = Range.create (Some (Exclusive triplet.B)) boundCOpt
         let rangeAC = Range.create boundAOpt boundCOpt
-        Range.union2 rangeABIncl rangeBCIncl = [ rangeAC ]
-            && Range.union2 rangeABIncl rangeBCExcl = [ rangeAC ]
-            && Range.union2 rangeABExcl rangeBCIncl = [ rangeAC ]
-            && Range.union2 rangeABExcl rangeBCExcl = [ rangeABExcl; rangeBCExcl ]
+        Range.union [rangeABIncl] [rangeBCIncl] = [rangeAC]
+            && Range.union [rangeABIncl] [rangeBCExcl] = [rangeAC]
+            && Range.union [rangeABExcl] [rangeBCIncl] = [rangeAC]
+            && Range.union [rangeABExcl] [rangeBCExcl] = [rangeABExcl; rangeBCExcl]
 
+(*
 module IntersectionTests =
 
     [<Property>]
@@ -212,3 +210,4 @@ module IntersectionTests =
             && Range.intersection2 rangeABIncl rangeBCExcl = None
             && Range.intersection2 rangeABExcl rangeBCIncl = None
             && Range.intersection2 rangeABExcl rangeBCExcl = None
+*)

@@ -73,17 +73,17 @@ module Range =
         inRangeLower && inRangeUpper
 
     /// Indexes and sorts the bounds of the given ranges.
-    let private toIndexedBoundDirs ranges overlap =
+    let private toIndexedBoundDirs overlap ranges =
         seq {
             for idx, range in Seq.indexed ranges do
                 yield idx, BoundDir.create range._LowerOpt -1 overlap
                 yield idx, BoundDir.create range._UpperOpt  1 overlap
         } |> Seq.sortBy snd
 
-    /// Computes the union of the given ranges.
-    let union ranges =
+    /// Merges the given ranges where possible.
+    let merge ranges =
         let active, lowerBoundOpt, outRanges =
-            ((Set.empty, None, []), toIndexedBoundDirs ranges 1)
+            ((Set.empty, None, []), toIndexedBoundDirs 1 ranges)
                 ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
                     match boundDir.Direction with
 
@@ -114,45 +114,9 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
-    let intersection ranges =
-        let ranges = Seq.toArray ranges
-        let active, lowerBoundOpt, outRanges =
-            ((Set.empty, None, []), toIndexedBoundDirs ranges -1)
-                ||> Seq.fold (fun (active, lowerBoundOpt, outRanges) (idx, boundDir) ->
-                    match boundDir.Direction with
-
-                            // lower bound activates its range
-                        | -1 ->
-                            assert(active.Contains(idx) |> not)
-                            let active' = active.Add(idx)
-
-                                // if all ranges currently active, this lower bound starts the output range
-                            let lowerBoundOpt' =
-                                if active'.Count = ranges.Length then
-                                    boundDir.BoundOpt
-                                else lowerBoundOpt
-
-                            active', lowerBoundOpt', outRanges
-
-                            // upper bound deactivates its range
-                        |  1 ->
-                                // if all ranges currently active, this upper bound ends the output range
-                            let lowerBoundOpt', outRanges' =
-                                if active.Count = ranges.Length then
-                                    let range = create lowerBoundOpt boundDir.BoundOpt
-                                    None, range :: outRanges
-                                else lowerBoundOpt, outRanges
-
-                            assert(active.Contains(idx))
-                            active.Remove(idx), lowerBoundOpt', outRanges'
-
-                        |  _ -> failwith "Unexpected")
-        assert(active.IsEmpty)
-        assert(lowerBoundOpt.IsNone)
-        match outRanges with
-            | [] -> None
-            | [ outRange ] -> Some outRange
-            | _ -> failwith "Unexpected"
+    /// Computes the union of the given ranges.
+    let union rangesA rangesB =
+        merge (rangesA @ rangesB)
 
 [<AutoOpen>]
 module RangeOperators =
