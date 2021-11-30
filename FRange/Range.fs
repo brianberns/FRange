@@ -114,7 +114,7 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
-    let intersect ranges =
+    let intersection ranges =
         let ranges = Seq.toArray ranges
         let active, lowerBoundOpt, outRanges =
             ((Set.empty, None, []), toIndexedBoundDirs ranges -1)

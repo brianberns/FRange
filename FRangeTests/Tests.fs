@@ -28,8 +28,8 @@ module Range =
     let union2 rangeA rangeB =
         Range.union [ rangeA; rangeB ]
 
-    let intersect2 rangeA rangeB =
-        Range.intersect [ rangeA; rangeB ]
+    let intersection2 rangeA rangeB =
+        Range.intersection [ rangeA; rangeB ]
 
 type Triplet =
     {
@@ -101,8 +101,8 @@ module RangeTests =
         let rangeA = !-+ 1
         let rangeB = !*- -1
         let rangeC = -1 *-+ 1
-        let intersect = Range.intersect2 rangeA rangeB
-        intersect = [ rangeC ]
+        let intersection = Range.intersection2 rangeA rangeB
+        intersection = [ rangeC ]
 
 module UnionTests =
 
@@ -156,46 +156,52 @@ module UnionTests =
             && Range.union2 rangeABExcl rangeBCIncl = [ rangeAC ]
             && Range.union2 rangeABExcl rangeBCExcl = [ rangeABExcl; rangeBCExcl ]
 
-module IntersectTests =
+module IntersectionTests =
 
     [<Property>]
-    let ``Intersect of ranges is a subset of all ranges`` (ranges : List<Range<int>>) =
-        let intersect = Range.intersect ranges
-        ranges
-            |> Seq.forall (fun range ->
-                Range.intersect (range :: intersect) = intersect)
+    let ``Intersection of ranges is a subset of all ranges`` (ranges : List<Range<int>>) =
+        let intersection = Range.intersection ranges
+        if intersection.IsEmpty then true
+        else
+            ranges
+                |> Seq.forall (fun range ->
+                    Range.intersection (range :: intersection) = intersection)
 
     [<Property>]
-    let ``Intersect of no ranges is empty`` () =
-        Range.intersect [] = []
+    let ``Intersection of no ranges is empty`` () =
+        Range.intersection [] = []
 
     [<Property>]
-    let ``Intersect of range by itself is self`` (range : Range<int>) =
-        Range.intersect [ range ] = [ range ]
+    let ``Intersection of range by itself is self`` (range : Range<int>) =
+        Range.intersection [ range ] = [ range ]
 
     [<Property>]
-    let ``Intersect of range with itself is self`` (range : Range<int>) =
-        Range.intersect2 range range = [ range ]
+    let ``Intersection of range with itself is self`` (range : Range<int>) =
+        Range.intersection2 range range = [ range ]
 
     [<Property>]
-    let ``Intersect of range with infinite range is self`` (range : Range<int>) =
-        Range.intersect2 range Range.infinite = [ range ]
+    let ``Intersection of range with infinite range is self`` (range : Range<int>) =
+        Range.intersection2 range Range.infinite = [ range ]
 
     [<Property>]
-    let ``Intersect is commutative`` (rangeA : Range<int>) rangeB =
-        Range.intersect2 rangeA rangeB
-            = Range.intersect2 rangeB rangeA
+    let ``Intersection is commutative`` (rangeA : Range<int>) rangeB =
+        Range.intersection2 rangeA rangeB
+            = Range.intersection2 rangeB rangeA
 
     [<Property>]
-    let ``Intersect is associative`` (rangeA : Range<int>) rangeB rangeC =
-        let rangesAB = Range.intersect2 rangeA rangeB
-        let rangesBC = Range.intersect2 rangeB rangeC
-        let intersect0 = Range.intersect (rangesAB @ [ rangeC ])
-        let intersect1 = Range.intersect (rangeA :: rangesBC)
-        intersect0 = intersect1
+    let ``Intersection is associative`` (rangeA : Range<int>) rangeB rangeC =
+        let rangesAB = Range.intersection2 rangeA rangeB
+        let rangesBC = Range.intersection2 rangeB rangeC
+        let intersection0 =
+            if rangesAB.IsEmpty then []
+            else Range.intersection (rangesAB @ [ rangeC ])
+        let intersection1 =
+            if rangesBC.IsEmpty then []
+            else Range.intersection (rangeA :: rangesBC)
+        intersection0 = intersection1
 
     [<Property>]
-    let ``Intersect of adjancent ranges is a point at most`` triplet =
+    let ``Intersection of adjancent ranges is a point at most`` triplet =
         let boundAOpt = triplet.AOpt |> Option.map Inclusive
         let boundCOpt = triplet.COpt |> Option.map Inclusive
         let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
@@ -203,7 +209,7 @@ module IntersectTests =
         let rangeBCIncl = Range.create (Some (Inclusive triplet.B)) boundCOpt
         let rangeBCExcl = Range.create (Some (Exclusive triplet.B)) boundCOpt
         let rangeB = Range.singleton triplet.B
-        Range.intersect2 rangeABIncl rangeBCIncl = [ rangeB ]
-            && Range.intersect2 rangeABIncl rangeBCExcl = [ rangeB ]
-            && Range.intersect2 rangeABExcl rangeBCIncl = [ rangeB ]
-            && Range.intersect2 rangeABExcl rangeBCExcl = [ ]
+        Range.intersection2 rangeABIncl rangeBCIncl = [ rangeB ]
+            && Range.intersection2 rangeABIncl rangeBCExcl = []
+            && Range.intersection2 rangeABExcl rangeBCIncl = []
+            && Range.intersection2 rangeABExcl rangeBCExcl = []

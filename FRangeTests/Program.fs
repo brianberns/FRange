@@ -4,8 +4,9 @@ module Program =
 
     [<EntryPoint>] 
     let main args =
-        let rangeA = 0 +-+ 1
-        let rangeB = 1 +-+ 2
-        Range.intersect2 rangeA rangeB
+        IntersectionTests.``Intersection is associative``
+            !*- 0
+            !*- 0
+            !-* 0
             |> printfn "%A"
         0
