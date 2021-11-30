@@ -86,7 +86,7 @@ module Range =
         let boundDirs =
             ranges
                 |> toBoundDirs
-                |> Seq.sortWith (BoundDir.compare 1)
+                |> Seq.sortBy (BoundDir.sortProjection 1)
         let activeCount, lowerBoundOpt, outRanges =
             ((0, None, []), boundDirs)
                 ||> Seq.fold (fun (activeCount, lowerBoundOpt, outRanges) boundDir ->
@@ -132,8 +132,7 @@ module Range =
             seq {
                 yield! rangesA |> convert 0
                 yield! rangesB |> convert 1
-            } |> Seq.sortWith (fun (boundDirA, _) (boundDirB , _) ->
-                BoundDir.compare -1 boundDirA boundDirB)
+            } |> Seq.sortBy (fst >> BoundDir.sortProjection -1)
         let activeCounts =
             [| 0; 0 |]
                 |> System.Collections.Immutable.ImmutableArray.ToImmutableArray

@@ -40,7 +40,7 @@ module private BoundDir =
             Direction = direction
         }
 
-    /// Compares two directed bounds in the following order:
+    /// Sorts directed bounds in the following order:
     /// * An infinite lower bound is less than any other bound.
     /// * An infinite upper bound is more than any other bound.
     /// * Finite bonds are sorted by value.
@@ -49,21 +49,19 @@ module private BoundDir =
     /// * An inclusive lower bound is optionally less/more than an exclusive
     ///   upper bound of the same value. This ensures that adjacent ranges
     ///   overlap correctly.
-    let compare overlap boundDirA boundDirB =
+    let sortProjection overlap boundDir =
         if overlap <> 1 && overlap <> -1 then
             invalidArg (nameof overlap) "Invalid overlap"
-        let toTuple boundDir =
-            match boundDir.BoundOpt with
-                | None ->
-                    boundDir.Direction, None, 0, boundDir.Direction
-                | Some (Inclusive value) ->
-                    0,
-                    Some value,
-                    boundDir.Direction,
-                    overlap * boundDir.Direction
-                | Some (Exclusive value) ->
-                    0,
-                    Some value,
-                    -boundDir.Direction,
-                    overlap * boundDir.Direction
-        compare (toTuple boundDirA) (toTuple boundDirB)
+        match boundDir.BoundOpt with
+            | None ->
+                boundDir.Direction, None, 0, boundDir.Direction
+            | Some (Inclusive value) ->
+                0,
+                Some value,
+                boundDir.Direction,
+                overlap * boundDir.Direction
+            | Some (Exclusive value) ->
+                0,
+                Some value,
+                -boundDir.Direction,
+                overlap * boundDir.Direction
