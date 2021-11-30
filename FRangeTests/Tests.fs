@@ -5,14 +5,14 @@ namespace FRange
 open FsCheck
 open FsCheck.Xunit
 
-module Int =
-    let gen = Arb.from<int>.Generator
+module Generator =
+    let from<'t> = Arb.from<'t>.Generator   // is there a better way to get this?
 
 module Range =
 
-    let arb =
+    let arb<'t when 't : comparison> =
         let genBoundOpt =
-            Int.gen
+            Generator.from<'t>
                 |> Gen.apply (Gen.elements [Inclusive; Exclusive])
                 |> Gen.optionOf
         let rec genRange =
@@ -25,25 +25,26 @@ module Range =
             }
         genRange |> Arb.fromGen
 
-type Triplet =
+type Triplet<'t when 't : comparison> =
     {
-        AOpt : Option<int>
-        B : int
-        COpt : Option<int>
+        AOpt : Option<'t>
+        B : 't
+        COpt : Option<'t>
     }
 
     static member Arb =
+        let valueGen = Generator.from<'t>
         gen {
             let! aOpt =
-                Int.gen |> Gen.optionOf
+                valueGen |> Gen.optionOf
             let! b =
-                Int.gen
+                valueGen
                     |> Gen.where (fun b ->
                         aOpt
                             |> Option.map (fun a -> b > a)
                             |> Option.defaultValue true)
             let! cOpt =
-                Int.gen
+                valueGen
                     |> Gen.optionOf
                     |> Gen.where (fun cOpt ->
                         cOpt
@@ -70,6 +71,20 @@ module RangeTests =
 
     [<Property>]
     let ``Lower value <= upper value`` (range : Range<int>) =
+        match range.LowerOpt, range.UpperOpt with
+            | Some lower, Some upper ->
+                lower.Value <= upper.Value
+            | _ -> true
+
+    [<Property>]
+    let ``DateTime type`` (range : Range<System.DateTime>) =
+        match range.LowerOpt, range.UpperOpt with
+            | Some lower, Some upper ->
+                lower.Value <= upper.Value
+            | _ -> true
+
+    [<Property>]
+    let ``String type`` (range : Range<string>) =
         match range.LowerOpt, range.UpperOpt with
             | Some lower, Some upper ->
                 lower.Value <= upper.Value
@@ -146,7 +161,7 @@ module UnionTests =
             Range.union rangesA rangesBC
 
     [<Property>]
-    let ``Union merges adjancent ranges`` triplet =
+    let ``Union merges adjancent ranges`` (triplet : Triplet<int>) =
         let boundAOpt = triplet.AOpt |> Option.map Inclusive
         let boundCOpt = triplet.COpt |> Option.map Inclusive
         let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
@@ -202,7 +217,7 @@ module IntersectionTests =
             Range.intersection rangesA rangesBC
 
     [<Property>]
-    let ``Intersection of adjancent ranges is a point at most`` triplet =
+    let ``Intersection of adjancent ranges is a point at most`` (triplet : Triplet<int>) =
         let boundAOpt = triplet.AOpt |> Option.map Inclusive
         let boundCOpt = triplet.COpt |> Option.map Inclusive
         let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
