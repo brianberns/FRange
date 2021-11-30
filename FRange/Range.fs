@@ -73,11 +73,11 @@ module Range =
         inRangeLower && inRangeUpper
 
     /// Extracts directed bounds from the given ranges.
-    let private toBoundDirs overlap ranges =
+    let private toBoundDirs ranges =
         seq {
             for range in ranges do
-                yield BoundDir.create range._LowerOpt -1 overlap
-                yield BoundDir.create range._UpperOpt  1 overlap
+                yield BoundDir.create range._LowerOpt -1
+                yield BoundDir.create range._UpperOpt  1
         }
 
     /// Merges the given ranges where possible. The result is a normalized
@@ -85,8 +85,8 @@ module Range =
     let merge ranges =
         let boundDirs =
             ranges
-                |> toBoundDirs 1
-                |> Seq.sort
+                |> toBoundDirs
+                |> Seq.sortWith (BoundDir.compare 1)
         let activeCount, lowerBoundOpt, outRanges =
             ((0, None, []), boundDirs)
                 ||> Seq.fold (fun (activeCount, lowerBoundOpt, outRanges) boundDir ->
@@ -127,12 +127,13 @@ module Range =
         let pairs =
             let convert idx ranges =
                 ranges
-                    |> toBoundDirs -1
+                    |> toBoundDirs
                     |> Seq.map (fun boundDir -> boundDir, idx)
             seq {
                 yield! rangesA |> convert 0
                 yield! rangesB |> convert 1
-            } |> Seq.sortBy fst
+            } |> Seq.sortWith (fun (boundDirA, _) (boundDirB , _) ->
+                BoundDir.compare -1 boundDirA boundDirB)
         let activeCounts =
             [| 0; 0 |]
                 |> System.Collections.Immutable.ImmutableArray.ToImmutableArray
