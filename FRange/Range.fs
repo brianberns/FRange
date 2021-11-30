@@ -149,8 +149,10 @@ module Range =
                         |  _ -> failwith "Unexpected")
         assert(active.IsEmpty)
         assert(lowerBoundOpt.IsNone)
-        assert(outRanges.Length <= 1)
-        outRanges
+        match outRanges with
+            | [] -> None
+            | [ outRange ] -> Some outRange
+            | _ -> failwith "Unexpected"
 
 [<AutoOpen>]
 module RangeOperators =

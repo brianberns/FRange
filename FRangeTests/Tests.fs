@@ -101,8 +101,7 @@ module RangeTests =
         let rangeA = !-+ 1
         let rangeB = !*- -1
         let rangeC = -1 *-+ 1
-        let intersection = Range.intersection2 rangeA rangeB
-        intersection = [ rangeC ]
+        Range.intersection2 rangeA rangeB = Some rangeC
 
 module UnionTests =
 
@@ -160,28 +159,28 @@ module IntersectionTests =
 
     [<Property>]
     let ``Intersection of ranges is a subset of all ranges`` (ranges : List<Range<int>>) =
-        let intersection = Range.intersection ranges
-        if intersection.IsEmpty then true
-        else
-            ranges
-                |> Seq.forall (fun range ->
-                    Range.intersection (range :: intersection) = intersection)
+        Range.intersection ranges
+            |> Option.map (fun intersection ->
+                ranges
+                    |> Seq.forall (fun range ->
+                        Range.intersection2 range intersection = Some intersection))
+            |> Option.defaultValue true
 
     [<Property>]
     let ``Intersection of no ranges is empty`` () =
-        Range.intersection [] = []
+        Range.intersection [] = None
 
     [<Property>]
     let ``Intersection of range by itself is self`` (range : Range<int>) =
-        Range.intersection [ range ] = [ range ]
+        Range.intersection [ range ] = Some range
 
     [<Property>]
     let ``Intersection of range with itself is self`` (range : Range<int>) =
-        Range.intersection2 range range = [ range ]
+        Range.intersection2 range range = Some range
 
     [<Property>]
     let ``Intersection of range with infinite range is self`` (range : Range<int>) =
-        Range.intersection2 range Range.infinite = [ range ]
+        Range.intersection2 range Range.infinite = Some range
 
     [<Property>]
     let ``Intersection is commutative`` (rangeA : Range<int>) rangeB =
@@ -190,14 +189,14 @@ module IntersectionTests =
 
     [<Property>]
     let ``Intersection is associative`` (rangeA : Range<int>) rangeB rangeC =
-        let rangesAB = Range.intersection2 rangeA rangeB
-        let rangesBC = Range.intersection2 rangeB rangeC
         let intersection0 =
-            if rangesAB.IsEmpty then []
-            else Range.intersection (rangesAB @ [ rangeC ])
+            Range.intersection2 rangeA rangeB
+                |> Option.bind (fun rangeAB ->
+                    Range.intersection2 rangeAB rangeC)
         let intersection1 =
-            if rangesBC.IsEmpty then []
-            else Range.intersection (rangeA :: rangesBC)
+            Range.intersection2 rangeB rangeC
+                |> Option.bind (fun rangeBC ->
+                    Range.intersection2 rangeA rangeBC)
         intersection0 = intersection1
 
     [<Property>]
@@ -209,7 +208,7 @@ module IntersectionTests =
         let rangeBCIncl = Range.create (Some (Inclusive triplet.B)) boundCOpt
         let rangeBCExcl = Range.create (Some (Exclusive triplet.B)) boundCOpt
         let rangeB = Range.singleton triplet.B
-        Range.intersection2 rangeABIncl rangeBCIncl = [ rangeB ]
-            && Range.intersection2 rangeABIncl rangeBCExcl = []
-            && Range.intersection2 rangeABExcl rangeBCIncl = []
-            && Range.intersection2 rangeABExcl rangeBCExcl = []
+        Range.intersection2 rangeABIncl rangeBCIncl = Some rangeB
+            && Range.intersection2 rangeABIncl rangeBCExcl = None
+            && Range.intersection2 rangeABExcl rangeBCIncl = None
+            && Range.intersection2 rangeABExcl rangeBCExcl = None
