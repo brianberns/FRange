@@ -166,7 +166,7 @@ module IntersectionTests =
         let intersection =
             ranges
                 |> Seq.map List.singleton
-                |> Seq.reduce Range.intersection
+                |> Seq.fold Range.intersection [Range.infinite]
         ranges
             |> Seq.forall (fun range ->
                 Range.intersection [range] intersection = intersection)
@@ -181,6 +181,7 @@ module IntersectionTests =
 
     [<Property>]
     let ``Intersection of ranges with infinite range is identity`` (ranges : List<Range<int>>) =
+        let ranges = Range.merge ranges
         Range.intersection ranges [Range.infinite] = ranges
 
     [<Property>]

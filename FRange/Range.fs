@@ -80,7 +80,8 @@ module Range =
                 yield BoundDir.create range._UpperOpt  1 overlap
         }
 
-    /// Merges the given ranges where possible.
+    /// Merges the given ranges where possible. The result is a normalized
+    /// list of ranges, even if no merges occurred.
     let merge ranges =
         let boundDirs =
             ranges
