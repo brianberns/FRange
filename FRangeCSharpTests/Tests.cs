@@ -12,7 +12,12 @@ public class Tests
     [TestMethod]
     public void MultiRanges()
     {
-        var mrA = Range.Create(1, BoundType.Inclusive, 3, BoundType.Inclusive).ToMultiRange();
+        var rangeA = Range.Create(1, BoundType.Inclusive, 3, BoundType.Inclusive);
+        Assert.IsTrue(rangeA.HasLowerBound());
+        Assert.AreEqual(3, rangeA.UpperBoundValue());
+        Assert.AreEqual(BoundType.Inclusive, rangeA.UpperBoundType());
+
+        var mrA = rangeA.ToMultiRange();
         var mrB = Range.Create(2, BoundType.Exclusive, 4, BoundType.Exclusive).ToMultiRange();
 
         var union = Range.Create(1, BoundType.Inclusive, 4, BoundType.Exclusive).ToMultiRange();
