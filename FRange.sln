@@ -7,7 +7,12 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FRange", "FRange\FRange.fsp
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FRangeTests", "FRangeTests\FRangeTests.fsproj", "{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FRangeCSharpTests", "FRangeCSharpTests\FRangeCSharpTests.csproj", "{0397866B-82EA-4F36-A4E8-C63AC4538D4F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FRangeCSharpTests", "FRangeCSharpTests\FRangeCSharpTests.csproj", "{0397866B-82EA-4F36-A4E8-C63AC4538D4F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DF3EF7FC-FAE1-4274-BD89-E06A3E6A1197}"
+	ProjectSection(SolutionItems) = preProject
+		Readme.md = Readme.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

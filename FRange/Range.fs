@@ -91,6 +91,13 @@ module Range =
                 | None -> true
         inRangeLower && inRangeUpper
 
+    /// Maps the given function over the given range.
+    let map f range =
+        let mapper = f |> Bound.map |> Option.map
+        create
+            (mapper range._LowerOpt)
+            (mapper range._UpperOpt)
+
     /// Extracts directed bounds from the given ranges.
     let private toBoundDirs ranges =
         seq {
