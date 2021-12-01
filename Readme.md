@@ -17,7 +17,8 @@ let aSchedule =
     |]
 ```
 
-The `+-*` operator creates a range that has an inclusive lower bound (symbolized by `+`) and an exclusive upper bound (symbolized by `*`). 
+The `+-*` operator creates a range that has an inclusive lower bound (symbolized by `+`) and an exclusive upper bound (symbolized by `*`).
+
 Using this same pattern, we can also create a schedule for Bob:
 
 ```fsharp
