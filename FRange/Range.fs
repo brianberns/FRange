@@ -172,6 +172,59 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
+    let difference rangesA rangesB =
+        let pairs =
+            let convert idx ranges =
+                ranges
+                    |> toBoundDirs
+                    |> Seq.map (fun boundDir -> boundDir, idx)
+            seq {
+                yield! rangesA |> convert 0
+                yield! rangesB |> convert 1
+            } |> Seq.sortBy (fst >> BoundDir.sortProjection -1)
+        let activeCounts =
+            [| 0; 0 |]
+                |> System.Collections.Immutable.ImmutableArray.ToImmutableArray
+        let activeCounts', lowerBoundOpt, outRanges =
+            ((activeCounts, None, []), pairs)
+                ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
+
+                    assert(abs boundDir.Direction = 1)
+                    let activeCounts' =
+                        activeCounts.SetItem(idx, activeCounts[idx] - boundDir.Direction)
+                    assert(activeCounts' |> Seq.forall ((>=) 0))
+
+                    let lowerBoundOpt' =
+                        match idx, boundDir.Direction with
+                            | 0, -1 when activeCounts'[0] = 1
+                                && activeCounts[1] = 0 ->
+                                boundDir.BoundOpt
+                            | 1, 1 when activeCounts'[1] = 0
+                                && activeCounts'[0] > 0 ->
+                                boundDir.BoundOpt
+                            | _ -> lowerBoundOpt
+
+                    let outRanges' =
+                        let finished =
+                            match idx, boundDir.Direction with
+                                | 1, -1 when activeCounts'[1] = 1
+                                    && activeCounts'[0] > 0 -> true
+                                | 0, 1 when activeCounts'[0] = 0
+                                    && activeCounts[1] = 0 -> true
+                                | _ -> false
+                        if finished then
+                            let range = create lowerBoundOpt boundDir.BoundOpt
+                            range :: outRanges
+                        else outRanges
+
+                    activeCounts', lowerBoundOpt', outRanges')
+        assert(activeCounts' |> Seq.forall ((=) 0))
+        assert(lowerBoundOpt.IsNone)
+        List.rev outRanges
+
+    let inverse ranges =
+        difference [infinite] ranges
+
 [<AutoOpen>]
 module RangeOperators =
 

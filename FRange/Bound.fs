@@ -33,7 +33,7 @@ module private BoundDir =
 
     /// Creates a directed bound.
     let create boundOpt direction =
-        if direction <> 1 && direction <> -1 then
+        if abs direction <> 1 then
             invalidArg (nameof direction) "Invalid direction"
         {
             BoundOpt = boundOpt
@@ -50,7 +50,7 @@ module private BoundDir =
     ///   upper bound of the same value. This ensures that adjacent ranges
     ///   overlap correctly.
     let sortProjection overlap boundDir =
-        if overlap <> 1 && overlap <> -1 then
+        if abs overlap <> 1 then
             invalidArg (nameof overlap) "Invalid overlap"
         match boundDir.BoundOpt with
             | None ->
