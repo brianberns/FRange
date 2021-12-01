@@ -48,7 +48,7 @@ module Range =
         let isValid =
             match lowerOpt, upperOpt with
                 | Some (Inclusive lower), Some (Inclusive higher) ->
-                    lower <= higher   // range includes a single point
+                    lower <= higher   // range includes a single value
                 | Some (Inclusive lower), Some (Exclusive higher)
                 | Some (Exclusive lower), Some (Inclusive higher)
                 | Some (Exclusive lower), Some (Exclusive higher) ->
@@ -68,7 +68,7 @@ module Range =
             |> Option.defaultWith (fun () ->
                 failwith "Invalid range")
 
-    /// Creates a range that contains a single point.
+    /// Creates a range that contains a single value.
     let singleton x =
         let bound = Some (Inclusive x)
         create bound bound
@@ -77,7 +77,7 @@ module Range =
     let infinite<'t when 't : comparison> : Range<'t> =
         create None None
 
-    /// Indicates whether the given range contains the given point.
+    /// Indicates whether the given range contains the given value.
     let contains x range =
         let inRangeLower =
             match range._LowerOpt with

@@ -7,7 +7,7 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FRange", "FRange\FRange.fsp
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FRangeTests", "FRangeTests\FRangeTests.fsproj", "{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FRangeCsharpTests", "FRangeCsharpTests\FRangeCsharpTests.csproj", "{0397866B-82EA-4F36-A4E8-C63AC4538D4F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FRangeCSharpTests", "FRangeCSharpTests\FRangeCSharpTests.csproj", "{0397866B-82EA-4F36-A4E8-C63AC4538D4F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -54,6 +54,63 @@ type Range private () =
         let upper = createBound upperValue upperBoundType
         Range.create (Some lower) (Some upper)
 
+    /// Creates a range that contains a single value.
+    [<Extension>]
+    static member Singleton(value) =
+        Range.singleton value
+
+    /// A range that's infinite (i.e. unbounded) in both directions.
+    static member Infinite() =
+        Range.infinite
+
+/// A collection of ranges.
+type MultiRange<'t when 't : comparison>(ranges : seq<Range<'t>>) =
+
+    /// Ranges in this collection.
+    member _.Ranges = ranges
+
+    /// Display string.
+    override _.ToString() =
+        $"{ranges}"
+
+    /// Indicates whether the receiver's ranges are equivalent to the
+    /// given ranges.
+    member _.IsEquivalent(mr : MultiRange<_>) =
+        Range.merge ranges = Range.merge mr.Ranges
+
+    /// Merges the receiver's ranges (where possible).
+    member _.Merge() =
+        Range.merge ranges
+            |> MultiRange
+
+    /// Union of receiver's ranges with given ranges.
+    member _.Union(mr : MultiRange<_>) =
+        Range.union ranges mr.Ranges
+            |> MultiRange
+
+    /// Intersection of receiver's ranges with given ranges.
+    member _.Intersection(mr : MultiRange<_>) =
+        Range.intersection ranges mr.Ranges
+            |> MultiRange
+
+    /// Removes everything in the given ranges from the receiver.
+    member _.Difference(mr : MultiRange<_>) =
+        Range.difference ranges mr.Ranges
+            |> MultiRange
+
+    /// Inverts the receiver's ranges.
+    member _.Inverse() =
+        Range.inverse ranges
+            |> MultiRange
+
+/// C# support for creating multi-ranges.
+[<AbstractClass; Sealed>]
+type MultiRange private () =
+
+    /// Creates a multi-range containing the given ranges.
+    static member Create(ranges) =
+        MultiRange<_>(ranges)
+
 [<Extension>]
 type RangeExt =
 
@@ -63,7 +120,7 @@ type RangeExt =
 
     /// Value of this range's lower bound, if any.
     [<Extension>]
-    static member owerBoundValue(range) = BoundOpt.value range._LowerOpt
+    static member LowerBoundValue(range) = BoundOpt.value range._LowerOpt
 
     /// Type of this range's lower bound, if any.
     [<Extension>]
@@ -80,3 +137,11 @@ type RangeExt =
     /// Type of this range's lower bound, if any.
     [<Extension>]
     static member UpperBoundType(range) = BoundOpt.boundType range._UpperOpt
+
+    /// Indicates whether this range contains the given value.
+    [<Extension>]
+    static member Contains(range, value) = range |> Range.contains value
+
+    /// Creates a multi-range containing the given range.
+    [<Extension>]
+    static member ToMultiRange(range) = [range] |> MultiRange<_>
