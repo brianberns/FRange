@@ -238,6 +238,19 @@ module ``Difference tests`` =
 
     [<Property>]
     let ``Double inverse is identity`` (ranges : List<Range<int>>) =
+        let ranges = Range.merge ranges
         let inverse = Range.inverse ranges
         let inverse' = Range.inverse inverse
         inverse' = ranges
+
+    let (.||.) = Range.union
+    let (.&&.) = Range.intersection
+    let (~~) = Range.inverse
+
+    [<Property>]
+    let ``De Morgan's laws``
+        (A : List<Range<int>>)
+        (B : List<Range<int>>) =
+        let first = ~~(A .||. B) = (~~A .&&. ~~B)
+        let second = ~~(A .&&. B) = (~~A .||. ~~B)
+        first && second
