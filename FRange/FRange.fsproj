@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="Bound.fs" />
     <Compile Include="Range.fs" />
+    <Compile Include="CSharp.fs" />
   </ItemGroup>
 
 </Project>
