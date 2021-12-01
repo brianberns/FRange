@@ -57,22 +57,20 @@ module private BoundDir =
     /// * Finite bonds are sorted by value.
     /// * An inclusive bound is extends farther in its direction than
     ///   an exclusive bound of the same value.
-    /// * An inclusive lower bound is optionally less/more than an exclusive
-    ///   upper bound of the same value. This ensures that adjacent ranges
-    ///   overlap correctly.
-    let sortProjection overlap boundDir =
-        if abs overlap <> 1 then
-            invalidArg (nameof overlap) "Invalid overlap"
+    let sortProjection tieBreaker boundDir =
         match boundDir.BoundOpt with
             | None ->
-                boundDir.Direction, None, 0, boundDir.Direction
+                boundDir.Direction,
+                None,
+                0,
+                tieBreaker
             | Some (Inclusive value) ->
                 0,
                 Some value,
                 boundDir.Direction,
-                overlap * boundDir.Direction
+                tieBreaker
             | Some (Exclusive value) ->
                 0,
                 Some value,
                 -boundDir.Direction,
-                overlap * boundDir.Direction
+                tieBreaker

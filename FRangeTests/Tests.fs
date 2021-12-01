@@ -64,7 +64,7 @@ module Generators =
         MaxTest = 1000)>]
     do ()
 
-module RangeTests =
+module ``Range tests`` =
 
     type Generators =
         static member Range() = Range.arb
@@ -104,6 +104,8 @@ module RangeTests =
         let rangeB = 2 *-* 4
         Range.union [rangeA] [rangeB] = [1 +-* 4]
             && Range.intersection [rangeA] [rangeB] = [2 *-+ 3]
+            && Range.difference [rangeA] [rangeB] = [1 +-+ 2]
+            && Range.difference [rangeB] [rangeA] = [3 *-* 4]
 
     [<Property>]
     let ``Unbounded operators`` () =
@@ -111,8 +113,10 @@ module RangeTests =
         let rangeB = !*- -1
         Range.union [rangeA] [rangeB] = [Range.infinite]
             && Range.intersection [rangeA] [rangeB] = [-1 *-+ 1]
+            && Range.difference [rangeA] [rangeB] = [!-+ -1]
+            && Range.difference [rangeB] [rangeA] = [!*- 1]
 
-module MergeTests =
+module ``Merge tests`` =
 
     [<Property>]
     let ``Merged ranges are a superset of all ranges`` (ranges : List<Range<int>>) =
@@ -129,7 +133,7 @@ module MergeTests =
     let ``Merge of range by itself is self`` (range : Range<int>) =
         Range.merge [range] = [range]
 
-module UnionTests =
+module ``Union tests`` =
 
     [<Property>]
     let ``Union of range with empty is itself`` (range : Range<int>) =
@@ -174,7 +178,7 @@ module UnionTests =
             && Range.union [rangeABExcl] [rangeBCIncl] = [rangeAC]
             && Range.union [rangeABExcl] [rangeBCExcl] = [rangeABExcl; rangeBCExcl]
 
-module IntersectionTests =
+module ``Intersection tests`` =
 
     [<Property>]
     let ``Intersection of ranges is a subset of all ranges`` (ranges : List<Range<int>>) =
@@ -229,3 +233,11 @@ module IntersectionTests =
             && Range.intersection [rangeABIncl] [rangeBCExcl] = []
             && Range.intersection [rangeABExcl] [rangeBCIncl] = []
             && Range.intersection [rangeABExcl] [rangeBCExcl] = []
+
+module ``Difference tests`` =
+
+    [<Property>]
+    let ``Double inverse is identity`` (ranges : List<Range<int>>) =
+        let inverse = Range.inverse ranges
+        let inverse' = Range.inverse inverse
+        inverse' = ranges

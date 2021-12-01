@@ -16,11 +16,29 @@ type Range<'t when 't : comparison> =
         _UpperOpt : Option<Bound<'t>>
     }
 
+    /// Display string.
+    override range.ToString() =
+        let sLower =
+            match range._LowerOpt with
+                | Some (Inclusive lower) -> $"{lower} <= "
+                | Some (Exclusive lower) -> $"{lower} < "
+                | None -> ""
+        let sUpper =
+            match range._UpperOpt with
+                | Some (Inclusive upper) -> $" <= {upper}"
+                | Some (Exclusive upper) -> $" < {upper}"
+                | None -> ""
+        if range._LowerOpt.IsNone && range._UpperOpt.IsNone then
+            "infinite"
+        else
+            $"{sLower}x{sUpper}"
+
     /// Optional lower bound.
     member range.LowerOpt = range._LowerOpt
 
     /// Optional upper bound.
     member range.UpperOpt = range._UpperOpt
+            
 
 module Range =
 
@@ -86,7 +104,8 @@ module Range =
         let boundDirs =
             ranges
                 |> toBoundDirs
-                |> Seq.sortBy (BoundDir.sortProjection 1)
+                |> Seq.sortBy (fun boundDir ->
+                    boundDir |> BoundDir.sortProjection boundDir.Direction)
         let activeCount, lowerBoundOpt, outRanges =
             ((0, None, []), boundDirs)
                 ||> Seq.fold (fun (activeCount, lowerBoundOpt, outRanges) boundDir ->
@@ -132,7 +151,8 @@ module Range =
             seq {
                 yield! rangesA |> convert 0
                 yield! rangesB |> convert 1
-            } |> Seq.sortBy (fst >> BoundDir.sortProjection -1)
+            } |> Seq.sortBy (fun (boundDir, _) ->
+                boundDir |> BoundDir.sortProjection -boundDir.Direction)
         let activeCounts =
             [| 0; 0 |]
                 |> System.Collections.Immutable.ImmutableArray.ToImmutableArray
@@ -183,7 +203,8 @@ module Range =
             seq {
                 yield! rangesA |> convert 0
                 yield! rangesB |> convert 1
-            } |> Seq.sortBy (fst >> BoundDir.sortProjection -1)
+            } |> Seq.sortBy (fun (boundDir, idx) ->
+                boundDir |> BoundDir.sortProjection (idx * boundDir.Direction))
         let activeCounts =
             [| 0; 0 |]
                 |> System.Collections.Immutable.ImmutableArray.ToImmutableArray

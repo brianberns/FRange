@@ -4,8 +4,7 @@ module Program =
 
     [<EntryPoint>] 
     let main args =
-        let rangeA = 1 +-+ 3
-        let rangeB = 2 *-* 4
-        Range.difference [rangeA] [rangeB]
+        let ranges = [ !*- 0 ; !-* -1 ]
+        ``Difference tests``.``Double inverse is identity`` ranges
             |> printfn "%A"
         0
