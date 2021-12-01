@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FRange", "FRange\FRange.fsproj", "{9CB12077-D132-403D-B6DD-1EC3C5612BE0}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FRange", "FRange\FRange.fsproj", "{9CB12077-D132-403D-B6DD-1EC3C5612BE0}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FRangeTests", "FRangeTests\FRangeTests.fsproj", "{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FRangeTests", "FRangeTests\FRangeTests.fsproj", "{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FRangeCsharpTests", "FRangeCsharpTests\FRangeCsharpTests.csproj", "{0397866B-82EA-4F36-A4E8-C63AC4538D4F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65C8CB6F-6643-4DA4-ACB0-2B6A62077D02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0397866B-82EA-4F36-A4E8-C63AC4538D4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0397866B-82EA-4F36-A4E8-C63AC4538D4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0397866B-82EA-4F36-A4E8-C63AC4538D4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0397866B-82EA-4F36-A4E8-C63AC4538D4F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

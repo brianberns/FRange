@@ -1,4 +1,7 @@
-﻿namespace FRange
+﻿namespace FRange.CSharp
+
+open System.Runtime.CompilerServices
+open FRange
 
 /// Inclusive/exclusive bound type.
 type BoundType =
@@ -9,15 +12,7 @@ type BoundType =
     /// Bound is exclusive. E.g. x <= 3.
     | Exclusive = 0
 
-module private BoundExt =
-
-    type Bound<'t> with
-
-        /// Bound's type.
-        member bound.Type =
-            match bound with
-                | Inclusive _ -> BoundType.Inclusive
-                | Exclusive _ -> BoundType.Exclusive
+module private BoundOpt =
 
     /// Value of a bound, if any.
     let value boundOpt =
@@ -28,28 +23,60 @@ module private BoundExt =
     /// Type of a bound, if any.
     let boundType boundOpt =
         match boundOpt with
-            | Some (bound : Bound<_>) -> bound.Type
+            | Some (Inclusive _) -> BoundType.Inclusive
+            | Some (Exclusive _) -> BoundType.Exclusive
             | None -> failwith "No bound"
 
-/// C# support.
-module CSharp =
+/// C# support for creating ranges.
+[<AbstractClass; Sealed>]
+type Range private () =
 
-    type Range<'t when 't : comparison> with
+    /// Creates a bound of the given value and type.
+    static let createBound value boundType =
+        match boundType with
+            | BoundType.Inclusive -> Inclusive value
+            | BoundType.Exclusive -> Exclusive value
+            | _ -> failwith "Unexpected"
 
-        /// Indicates whether this range has a lower bound.
-        member range.HasLowerBound = range._LowerOpt.IsSome
+    /// Creates a range with a lower bound, but no upper bound.
+    static member CreateLower(value, boundType) =
+        let bound = createBound value boundType
+        Range.create (Some bound) None
 
-        /// Value of this range's lower bound, if any.
-        member range.LowerBoundValue = BoundExt.value range._LowerOpt
+    /// Creates a range with an upper bound, but no lower bound.
+    static member CreateUpper(value, boundType) =
+        let bound = createBound value boundType
+        Range.create None (Some bound)
 
-        /// Type of this range's lower bound, if any.
-        member range.LowerBoundType = BoundExt.boundType range._LowerOpt
+    /// Creates a range with the given bounds.
+    static member Create(lowerValue, lowerBoundType, upperValue, upperBoundType) =
+        let lower = createBound lowerValue lowerBoundType
+        let upper = createBound upperValue upperBoundType
+        Range.create (Some lower) (Some upper)
 
-        /// Indicates whether this range has a lower bound.
-        member range.HasUpperBound = range._UpperOpt.IsSome
+[<Extension>]
+type RangeExt =
 
-        /// Value of this range's upper bound, if any.
-        member range.UpperBoundValue = BoundExt.value range._UpperOpt
+    /// Indicates whether this range has a lower bound.
+    [<Extension>]
+    static member HasLowerBound(range) = range._LowerOpt.IsSome
 
-        /// Type of this range's lower bound, if any.
-        member range.UpperBoundType = BoundExt.boundType range._UpperOpt
+    /// Value of this range's lower bound, if any.
+    [<Extension>]
+    static member owerBoundValue(range) = BoundOpt.value range._LowerOpt
+
+    /// Type of this range's lower bound, if any.
+    [<Extension>]
+    static member LowerBoundType(range) = BoundOpt.boundType range._LowerOpt
+
+    /// Indicates whether this range has a lower bound.
+    [<Extension>]
+    static member HasUpperBound(range) = range._UpperOpt.IsSome
+
+    /// Value of this range's upper bound, if any.
+    [<Extension>]
+    static member UpperBoundValue(range) = BoundOpt.value range._UpperOpt
+
+    /// Type of this range's lower bound, if any.
+    [<Extension>]
+    static member UpperBoundType(range) = BoundOpt.boundType range._UpperOpt
