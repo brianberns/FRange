@@ -144,25 +144,25 @@ module Range =
                             // lower bound activates its range
                         | -1 ->
                                 // lower bound starts an output range?
-                            assert(activeCounts[idx] >= 0)
-                            assert(activeCounts[1-idx] >= 0)
+                            assert(activeCounts.[idx] >= 0)
+                            assert(activeCounts.[1-idx] >= 0)
                             let lowerBoundOpt' =
-                                if (activeCounts[idx] = 0) && (activeCounts[1-idx] > 0) then
+                                if (activeCounts.[idx] = 0) && (activeCounts.[1-idx] > 0) then
                                     boundDir.BoundOpt
                                 else lowerBoundOpt
 
                             let activeCounts' =
-                                activeCounts.SetItem(idx, activeCounts[idx] + 1)
+                                activeCounts.SetItem(idx, activeCounts.[idx] + 1)
                             activeCounts', lowerBoundOpt', outRanges
 
                             // upper bound deactivates its range
                         |  1 ->
-                            assert(activeCounts[idx] > 0)
-                            assert(activeCounts[1-idx] >= 0)
-                            let activeCounts' = activeCounts.SetItem(idx, activeCounts[idx] - 1)
+                            assert(activeCounts.[idx] > 0)
+                            assert(activeCounts.[1-idx] >= 0)
+                            let activeCounts' = activeCounts.SetItem(idx, activeCounts.[idx] - 1)
 
                                 // upper bound ends an output range?
-                            if (activeCounts'[idx] = 0) && (activeCounts'[1-idx] > 0) then
+                            if (activeCounts'.[idx] = 0) && (activeCounts'.[1-idx] > 0) then
                                 let range = create lowerBoundOpt boundDir.BoundOpt
                                 activeCounts', None, range :: outRanges
                             else activeCounts', lowerBoundOpt, outRanges
@@ -172,6 +172,8 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
+    /// Determines the difference of the given ranges by removing ranges
+    /// in the second sequence from the first sequence.
     let difference rangesA rangesB =
         let pairs =
             let convert idx ranges =
@@ -191,29 +193,35 @@ module Range =
 
                     assert(abs boundDir.Direction = 1)
                     let activeCounts' =
-                        activeCounts.SetItem(idx, activeCounts[idx] - boundDir.Direction)
-                    assert(activeCounts' |> Seq.forall ((>=) 0))
+                        activeCounts.SetItem(idx, activeCounts.[idx] - boundDir.Direction)
+                    assert(activeCounts' |> Seq.forall (fun count -> count >= 0))
 
-                    let lowerBoundOpt' =
+                    let lowerBoundOpt', finished =
                         match idx, boundDir.Direction with
-                            | 0, -1 when activeCounts'[0] = 1
-                                && activeCounts[1] = 0 ->
-                                boundDir.BoundOpt
-                            | 1, 1 when activeCounts'[1] = 0
-                                && activeCounts'[0] > 0 ->
-                                boundDir.BoundOpt
-                            | _ -> lowerBoundOpt
+
+                                // start new range?
+                            | 0, -1 when activeCounts'.[0] = 1
+                                && activeCounts.[1] = 0 ->
+                                boundDir.BoundOpt, false
+                            | 1, 1 when activeCounts'.[1] = 0
+                                && activeCounts'.[0] > 0 ->
+                                Bound.inverseOpt boundDir.BoundOpt, false
+
+                                // finish new range?
+                            | 1, -1 when activeCounts'.[1] = 1
+                                && activeCounts'.[0] > 0 -> None, true
+                            | 0, 1 when activeCounts'.[0] = 0
+                                && activeCounts.[1] = 0 -> None, true
+
+                            | _ -> lowerBoundOpt, false
 
                     let outRanges' =
-                        let finished =
-                            match idx, boundDir.Direction with
-                                | 1, -1 when activeCounts'[1] = 1
-                                    && activeCounts'[0] > 0 -> true
-                                | 0, 1 when activeCounts'[0] = 0
-                                    && activeCounts[1] = 0 -> true
-                                | _ -> false
                         if finished then
-                            let range = create lowerBoundOpt boundDir.BoundOpt
+                            let upperBoundOpt =
+                                if idx = 1 then
+                                    Bound.inverseOpt boundDir.BoundOpt
+                                else boundDir.BoundOpt
+                            let range = create lowerBoundOpt upperBoundOpt
                             range :: outRanges
                         else outRanges
 

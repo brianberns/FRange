@@ -18,6 +18,17 @@ type Bound<'t> =
             | Inclusive x
             | Exclusive x -> x
 
+module Bound =
+
+    /// Inverts the given bound.
+    let inverse = function
+        | Inclusive x -> Exclusive x
+        | Exclusive x -> Inclusive x
+
+    /// Inverts the given bound.
+    let inverseOpt boundOpt =
+        boundOpt |> Option.map inverse
+
 /// Internal representation of a directed bound within a range.
 /// this is used to sort bounds.
 type private BoundDir<'t when 't : comparison> =
