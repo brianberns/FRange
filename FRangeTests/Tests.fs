@@ -234,7 +234,7 @@ module ``Intersection tests`` =
             && Range.intersection [rangeABExcl] [rangeBCIncl] = []
             && Range.intersection [rangeABExcl] [rangeBCExcl] = []
 
-module ``Difference tests`` =
+module ``Inverse tests`` =
 
     [<Property>]
     let ``Double inverse is identity`` (ranges : List<Range<int>>) =
@@ -243,14 +243,13 @@ module ``Difference tests`` =
         let inverse' = Range.inverse inverse
         inverse' = ranges
 
-    let (.||.) = Range.union
-    let (.&&.) = Range.intersection
-    let (~~) = Range.inverse
-
     [<Property>]
     let ``De Morgan's laws``
         (A : List<Range<int>>)
         (B : List<Range<int>>) =
+        let (.||.) = Range.union
+        let (.&&.) = Range.intersection
+        let (~~) = Range.inverse
         let first = ~~(A .||. B) = (~~A .&&. ~~B)
         let second = ~~(A .&&. B) = (~~A .||. ~~B)
         first && second

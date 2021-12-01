@@ -38,7 +38,6 @@ type Range<'t when 't : comparison> =
 
     /// Optional upper bound.
     member range.UpperOpt = range._UpperOpt
-            
 
 module Range =
 
@@ -251,6 +250,7 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
+    /// Inverts the given ranges.
     let inverse ranges =
         difference [infinite] ranges
 
