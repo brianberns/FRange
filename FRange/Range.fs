@@ -191,8 +191,8 @@ module Range =
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
 
-    /// Determines the difference of the given ranges by removing ranges
-    /// in the second sequence from the first sequence.
+    /// Determines the difference of the given ranges by removing
+    /// everything in the second sequence from the first sequence.
     let difference rangesA rangesB =
         let pairs =
             let convert idx ranges =

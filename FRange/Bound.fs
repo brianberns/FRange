@@ -1,7 +1,5 @@
 ﻿namespace FRange
 
-open System
-
 /// An inclusive or exclusive bound at a specific value.
 [<NoComparison>]
 type Bound<'t> =
