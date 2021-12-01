@@ -1,5 +1,7 @@
 ﻿namespace FRange
 
+open System.Collections.Immutable
+
 /// A range of values, optionally bounded in one or both directions.
 /// Examples:
 /// * x < 3
@@ -140,23 +142,26 @@ module Range =
         Seq.append rangesA rangesB
             |> merge
 
+    /// Indexes directed bounds from the given ranges.
+    let private toIndexedBoundDirs rangesA rangesB =
+        let convert idx ranges =
+            ranges
+                |> toBoundDirs
+                |> Seq.map (fun boundDir -> boundDir, idx)
+        seq {
+            yield! rangesA |> convert 0
+            yield! rangesB |> convert 1
+        }
+
     /// Determines the intersection of the given ranges.
     let intersection rangesA rangesB =
         let pairs =
-            let convert idx ranges =
-                ranges
-                    |> toBoundDirs
-                    |> Seq.map (fun boundDir -> boundDir, idx)
-            seq {
-                yield! rangesA |> convert 0
-                yield! rangesB |> convert 1
-            } |> Seq.sortBy (fun (boundDir, _) ->
-                boundDir |> BoundDir.sortProjection -boundDir.Direction)
-        let activeCounts =
-            [| 0; 0 |]
-                |> System.Collections.Immutable.ImmutableArray.ToImmutableArray
+            toIndexedBoundDirs rangesA rangesB
+                |> Seq.sortBy (fun (boundDir, _) ->
+                    boundDir
+                        |> BoundDir.sortProjection -boundDir.Direction)
         let activeCounts', lowerBoundOpt, outRanges =
-            ((activeCounts, None, []), pairs)
+            ((ImmutableArray.ToImmutableArray [| 0; 0 |], None, []), pairs)
                 ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
                     match boundDir.Direction with
 
@@ -195,20 +200,12 @@ module Range =
     /// everything in the second sequence from the first sequence.
     let difference rangesA rangesB =
         let pairs =
-            let convert idx ranges =
-                ranges
-                    |> toBoundDirs
-                    |> Seq.map (fun boundDir -> boundDir, idx)
-            seq {
-                yield! rangesA |> convert 0
-                yield! rangesB |> convert 1
-            } |> Seq.sortBy (fun (boundDir, idx) ->
-                boundDir |> BoundDir.sortProjection (idx * boundDir.Direction))
-        let activeCounts =
-            [| 0; 0 |]
-                |> System.Collections.Immutable.ImmutableArray.ToImmutableArray
+            toIndexedBoundDirs rangesA rangesB
+                |> Seq.sortBy (fun (boundDir, idx) ->
+                    boundDir
+                        |> BoundDir.sortProjection (idx * boundDir.Direction))
         let activeCounts', lowerBoundOpt, outRanges =
-            ((activeCounts, None, []), pairs)
+            ((ImmutableArray.ToImmutableArray [| 0; 0 |], None, []), pairs)
                 ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
 
                     assert(abs boundDir.Direction = 1)
