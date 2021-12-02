@@ -18,11 +18,6 @@ type Bound<'t> =
 
 module Bound =
 
-    /// Maps the given function over the given bound.
-    let map f = function
-        | Inclusive x -> Inclusive (f x)
-        | Exclusive x -> Exclusive (f x)
-
     /// Inverts the given bound.
     let inverse = function
         | Inclusive x -> Exclusive x
