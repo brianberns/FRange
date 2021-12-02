@@ -91,27 +91,33 @@ module Range =
                 | None -> true
         inRangeLower && inRangeUpper
 
-    /// Maps the given function over the given range.
-    let map f range =
-        let mapper = f |> Bound.map |> Option.map
-        create
-            (mapper range._LowerOpt)
-            (mapper range._UpperOpt)
-
-    /// Extracts directed bounds from the given ranges.
-    let private toBoundDirs ranges =
+    /// Extracts directed bounds from the given range.
+    let private toBoundDirs f range =
         seq {
-            for range in ranges do
-                yield BoundDir.create range._LowerOpt -1
-                yield BoundDir.create range._UpperOpt  1
+            yield BoundDir.create (f range._LowerOpt) -1
+            yield BoundDir.create (f range._UpperOpt)  1
         }
+
+    /// Maps the given function over the given range, flipping
+    /// the bounds if necessary.
+    let map f range =
+        let boundDirs =
+            let mapper = f |> Bound.map |> Option.map
+            range
+                |> toBoundDirs mapper
+                |> Seq.sortBy (fun boundDir ->
+                    boundDir |> BoundDir.sortProjection boundDir.Direction)
+                |> Seq.toArray
+        create
+            boundDirs.[0].BoundOpt
+            boundDirs.[1].BoundOpt
 
     /// Merges the given ranges where possible. The result is a normalized
     /// list of ranges, even if no merges occurred.
     let merge ranges =
         let boundDirs =
             ranges
-                |> toBoundDirs
+                |> Seq.collect (toBoundDirs id)
                 |> Seq.sortBy (fun boundDir ->
                     boundDir |> BoundDir.sortProjection boundDir.Direction)
         let activeCount, lowerBoundOpt, outRanges =
@@ -153,7 +159,7 @@ module Range =
     let private toIndexedBoundDirs rangesA rangesB =
         let convert idx ranges =
             ranges
-                |> toBoundDirs
+                |> Seq.collect (toBoundDirs id)
                 |> Seq.map (fun boundDir -> boundDir, idx)
         seq {
             yield! rangesA |> convert 0

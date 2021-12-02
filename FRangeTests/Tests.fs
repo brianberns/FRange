@@ -99,6 +99,16 @@ module ``Range tests`` =
         test range.LowerOpt && test range.UpperOpt
 
     [<Property>]
+    let ``Mapping identity`` (range : Range<int>) =
+        range |> Range.map ((*) 1) = range
+
+    [<Property>]
+    let ``Mapping sign flip twice is identity`` (range : Range<int>) =
+        let flip = range |> Range.map ((*) -1)
+        let flip' = flip |> Range.map ((*) -1)
+        flip' = range
+
+    [<Property>]
     let ``Bounded operators`` () =
         let rangeA = 1 +-+ 3
         let rangeB = 2 *-* 4
