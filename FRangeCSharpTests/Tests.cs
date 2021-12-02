@@ -35,6 +35,7 @@ public class Tests
                     Range.CreateLower(4, BoundType.Inclusive)
                 });
         AssertEquivalent(inverse, union.Inverse());
+        Assert.IsTrue(inverse.Contains(-1));
     }
 
     static void Main()

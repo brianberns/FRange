@@ -73,6 +73,11 @@ type MultiRange<'t when 't : comparison>(ranges : seq<Range<'t>>) =
     override _.ToString() =
         $"{ranges}"
 
+    /// Indicates whether one of the reciever's ranges contains the
+    /// given value.
+    member _.Contains(value) =
+        ranges |> Seq.exists (Range.contains value)
+
     /// Indicates whether the receiver's ranges are equivalent to the
     /// given ranges.
     member _.IsEquivalent(mr : MultiRange<_>) =
