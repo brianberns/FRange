@@ -66,9 +66,6 @@ module Generators =
 
 module ``Range tests`` =
 
-    type Generators =
-        static member Range() = Range.arb
-
     [<Property>]
     let ``Lower value <= upper value`` (range : Range<int>) =
         match range.LowerOpt, range.UpperOpt with

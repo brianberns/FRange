@@ -48,7 +48,7 @@ module Range =
         let isValid =
             match lowerOpt, upperOpt with
                 | Some (Inclusive lower), Some (Inclusive higher) ->
-                    lower <= higher   // range includes a single value
+                    lower <= higher   // range contains a single value
                 | Some (Inclusive lower), Some (Exclusive higher)
                 | Some (Exclusive lower), Some (Inclusive higher)
                 | Some (Exclusive lower), Some (Exclusive higher) ->
@@ -85,11 +85,12 @@ module Range =
                 | Some (Exclusive lower) -> x > lower
                 | None -> true
         let inRangeUpper =
-            match range._UpperOpt with
-                | Some (Inclusive upper) -> x <= upper
-                | Some (Exclusive upper) -> x < upper
-                | None -> true
-        inRangeLower && inRangeUpper
+            lazy
+                match range._UpperOpt with
+                    | Some (Inclusive upper) -> x <= upper
+                    | Some (Exclusive upper) -> x < upper
+                    | None -> true
+        inRangeLower && inRangeUpper.Value   // laziness allows short-circuit
 
     /// Extracts directed bounds from the given ranges.
     let private toBoundDirs ranges =
