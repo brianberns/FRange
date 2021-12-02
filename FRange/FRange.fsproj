@@ -4,12 +4,28 @@
     <TargetFramework>net5.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <WarnOn>3390;$(WarnOn)</WarnOn>
+    <Authors>Brian Berns</Authors>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/brianberns/FRange</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/brianberns/FRange</RepositoryUrl>
+    <PackageIcon>ledfoot.png</PackageIcon>
+    <PackageTags>range</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Bound.fs" />
     <Compile Include="Range.fs" />
     <Compile Include="CSharp.fs" />
+    <None Include="..\ledfoot.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
+
+  <ItemGroup />
 
 </Project>
