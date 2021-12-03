@@ -11,6 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FRangeCSharpTests", "FRange
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DF3EF7FC-FAE1-4274-BD89-E06A3E6A1197}"
 	ProjectSection(SolutionItems) = preProject
+		fsharplint.json = fsharplint.json
 		ledfoot.png = ledfoot.png
 		LICENSE = LICENSE
 		Readme.md = Readme.md
