@@ -96,8 +96,10 @@ module Range =
     let private toBoundDirs ranges =
         seq {
             for range in ranges do
-                yield BoundDir.create range._LowerOpt -1
-                yield BoundDir.create range._UpperOpt  1
+                yield BoundDir.create
+                    range._LowerOpt BoundType.Lower
+                yield BoundDir.create
+                    range._UpperOpt BoundType.Upper
         }
 
     /// Merges the given ranges where possible. The result is a normalized
@@ -114,7 +116,7 @@ module Range =
                     match boundDir.Direction with
 
                             // lower bound activates its range
-                        | -1 ->
+                        | BoundType.Lower ->
                                 // if no ranges currently active, this lower bound starts an output range
                             assert(activeCount >= 0)
                             let lowerBoundOpt' =
@@ -123,7 +125,7 @@ module Range =
                             activeCount + 1, lowerBoundOpt', outRanges
 
                             // upper bound deactivates its range
-                        |  1 ->
+                        | BoundType.Upper ->
                             assert(activeCount > 0)
                             let activeCount' = activeCount - 1
 
@@ -133,7 +135,7 @@ module Range =
                                 activeCount', None, range :: outRanges
                             else activeCount', lowerBoundOpt, outRanges
 
-                        |  _ -> failwith "Unexpected")
+                        |  _ -> failwith "Unexpected bound direction")
         assert(activeCount = 0)
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
@@ -160,14 +162,14 @@ module Range =
             toIndexedBoundDirs rangesA rangesB
                 |> Seq.sortBy (fun (boundDir, _) ->
                     boundDir
-                        |> BoundDir.sortProjection -boundDir.Direction)
+                        |> BoundDir.sortProjection (-1 * int boundDir.Direction))
         let activeCounts', lowerBoundOpt, outRanges =
             ((ImmutableArray.ToImmutableArray [| 0; 0 |], None, []), pairs)
                 ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
                     match boundDir.Direction with
 
                             // lower bound activates its range
-                        | -1 ->
+                        | BoundType.Lower ->
                                 // lower bound starts an output range?
                             assert(activeCounts.[idx] >= 0)
                             assert(activeCounts.[1-idx] >= 0)
@@ -181,7 +183,7 @@ module Range =
                             activeCounts', lowerBoundOpt', outRanges
 
                             // upper bound deactivates its range
-                        |  1 ->
+                        | BoundType.Upper ->
                             assert(activeCounts.[idx] > 0)
                             assert(activeCounts.[1-idx] >= 0)
                             let activeCounts' = activeCounts.SetItem(idx, activeCounts.[idx] - 1)
@@ -192,7 +194,7 @@ module Range =
                                 activeCounts', None, range :: outRanges
                             else activeCounts', lowerBoundOpt, outRanges
 
-                        |  _ -> failwith "Unexpected")
+                        |  _ -> failwith "Unexpected bound direction")
         assert(activeCounts' |> Seq.forall ((=) 0))
         assert(lowerBoundOpt.IsNone)
         List.rev outRanges
@@ -204,31 +206,32 @@ module Range =
             toIndexedBoundDirs rangesA rangesB
                 |> Seq.sortBy (fun (boundDir, idx) ->
                     boundDir
-                        |> BoundDir.sortProjection (idx * boundDir.Direction))
+                        |> BoundDir.sortProjection (idx * int boundDir.Direction))
         let activeCounts', lowerBoundOpt, outRanges =
             ((ImmutableArray.ToImmutableArray [| 0; 0 |], None, []), pairs)
                 ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
 
-                    assert(abs boundDir.Direction = 1)
                     let activeCounts' =
-                        activeCounts.SetItem(idx, activeCounts.[idx] - boundDir.Direction)
+                        activeCounts.SetItem(
+                            idx,
+                            activeCounts.[idx] - int boundDir.Direction)
                     assert(activeCounts' |> Seq.forall (fun count -> count >= 0))
 
                     let lowerBoundOpt', finished =
                         match idx, boundDir.Direction with
 
                                 // start new range?
-                            | 0, -1 when activeCounts'.[0] = 1
+                            | 0, BoundType.Lower when activeCounts'.[0] = 1
                                 && activeCounts.[1] = 0 ->
                                 boundDir.BoundOpt, false
-                            | 1, 1 when activeCounts'.[1] = 0
+                            | 1, BoundType.Upper when activeCounts'.[1] = 0
                                 && activeCounts'.[0] > 0 ->
                                 Bound.inverseOpt boundDir.BoundOpt, false
 
                                 // finish new range?
-                            | 1, -1 when activeCounts'.[1] = 1
+                            | 1, BoundType.Lower when activeCounts'.[1] = 1
                                 && activeCounts'.[0] > 0 -> None, true
-                            | 0, 1 when activeCounts'.[0] = 0
+                            | 0, BoundType.Upper when activeCounts'.[0] = 0
                                 && activeCounts.[1] = 0 -> None, true
 
                             | _ -> lowerBoundOpt, false

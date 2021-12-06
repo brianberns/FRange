@@ -27,6 +27,11 @@ module Bound =
     let inverseOpt boundOpt =
         boundOpt |> Option.map inverse
 
+/// Lower vs. upper bound.
+type private BoundType =
+    | Lower = -1
+    | Upper = 1
+
 /// Internal representation of a directed bound within a range.
 /// this is used to sort bounds.
 type private BoundDir<'t when 't : comparison> =
@@ -34,16 +39,14 @@ type private BoundDir<'t when 't : comparison> =
         /// Bound, if any.
         BoundOpt : Option<Bound<'t>>
 
-        /// -1 -> lower bound, 1 -> upper bound.
-        Direction : int
+        /// Lower vs. upper bound.
+        Direction : BoundType
     }
 
 module private BoundDir =
 
     /// Creates a directed bound.
     let create boundOpt direction =
-        if abs direction <> 1 then
-            invalidArg (nameof direction) "Invalid direction"
         {
             BoundOpt = boundOpt
             Direction = direction
@@ -58,17 +61,17 @@ module private BoundDir =
     let sortProjection tieBreaker boundDir =
         match boundDir.BoundOpt with
             | None ->
-                boundDir.Direction,
+                int boundDir.Direction,
                 None,
                 0,
                 tieBreaker
             | Some (Inclusive value) ->
                 0,
                 Some value,
-                boundDir.Direction,
+                int boundDir.Direction,
                 tieBreaker
             | Some (Exclusive value) ->
                 0,
                 Some value,
-                -boundDir.Direction,
+                -1 * int boundDir.Direction,
                 tieBreaker
