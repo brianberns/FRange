@@ -10,6 +10,7 @@
     <RepositoryUrl>https://github.com/brianberns/FRange</RepositoryUrl>
     <PackageIcon>ledfoot.png</PackageIcon>
     <PackageTags>range</PackageTags>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
