@@ -1,6 +1,7 @@
 ﻿namespace FRange
 
-/// An inclusive or exclusive bound at a specific value.
+/// An inclusive or exclusive bound at a specific value, or the lack
+/// of a bound.
 [<NoComparison>]
 type Bound<'t> =
 
@@ -10,11 +11,8 @@ type Bound<'t> =
     /// Exclusive bound.
     | Exclusive of 't
 
-    /// Bound's value.
-    member bound.Value =
-        match bound with
-            | Inclusive x
-            | Exclusive x -> x
+    /// Unbounded.
+    | Unbounded
 
 module Bound =
 
@@ -22,10 +20,7 @@ module Bound =
     let inverse = function
         | Inclusive x -> Exclusive x
         | Exclusive x -> Inclusive x
-
-    /// Inverts the given bound.
-    let inverseOpt boundOpt =
-        boundOpt |> Option.map inverse
+        | Unbounded -> Unbounded
 
 /// Lower vs. upper bound.
 type private BoundType =
@@ -36,8 +31,8 @@ type private BoundType =
 /// this is used to sort bounds.
 type private BoundDir<'t when 't : comparison> =
     {
-        /// Bound, if any.
-        BoundOpt : Option<Bound<'t>>
+        /// Bound in this direction..
+        Bound: Bound<'t>
 
         /// Lower vs. upper bound.
         Direction : BoundType
@@ -46,9 +41,9 @@ type private BoundDir<'t when 't : comparison> =
 module private BoundDir =
 
     /// Creates a directed bound.
-    let create boundOpt direction =
+    let create bound direction =
         {
-            BoundOpt = boundOpt
+            Bound = bound
             Direction = direction
         }
 
@@ -60,18 +55,18 @@ module private BoundDir =
     ///   an exclusive bound of the same value.
     /// * The given tie-breaker value.
     let sortProjection tieBreaker boundDir =
-        match boundDir.BoundOpt with
-            | None ->
+        match boundDir.Bound with
+            | Unbounded ->
                 int boundDir.Direction,
                 None,
                 0,
                 tieBreaker
-            | Some (Inclusive value) ->
+            | Inclusive value ->
                 0,
                 Some value,
                 int boundDir.Direction,
                 tieBreaker
-            | Some (Exclusive value) ->
+            | Exclusive value ->
                 0,
                 Some value,
                 -1 * int boundDir.Direction,

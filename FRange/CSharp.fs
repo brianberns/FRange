@@ -12,20 +12,19 @@ type BoundType =
     /// Bound is exclusive. E.g. x <= 3.
     | Exclusive = 0
 
-module private BoundOpt =
+module private Bound =
 
     /// Value of a bound, if any.
-    let value boundOpt =
-        match boundOpt with
-            | Some (bound : Bound<_>) -> bound.Value
-            | None -> failwith "No bound"
+    let value = function
+        | Inclusive x
+        | Exclusive x -> x
+        | Unbounded -> failwith "No bound"
 
     /// Type of a bound, if any.
-    let boundType boundOpt =
-        match boundOpt with
-            | Some (Inclusive _) -> BoundType.Inclusive
-            | Some (Exclusive _) -> BoundType.Exclusive
-            | None -> failwith "No bound"
+    let boundType = function
+        | Inclusive _ -> BoundType.Inclusive
+        | Exclusive _ -> BoundType.Exclusive
+        | Unbounded -> failwith "No bound"
 
 /// C# support for creating ranges.
 [<AbstractClass; Sealed>]
@@ -41,18 +40,18 @@ type Range private () =
     /// Creates a range with a lower bound, but no upper bound.
     static member CreateLower(value, boundType) =
         let bound = createBound value boundType
-        Range.create (Some bound) None
+        Range.create bound Unbounded
 
     /// Creates a range with an upper bound, but no lower bound.
     static member CreateUpper(value, boundType) =
         let bound = createBound value boundType
-        Range.create None (Some bound)
+        Range.create Unbounded bound
 
     /// Creates a range with the given bounds.
     static member Create(lowerValue, lowerBoundType, upperValue, upperBoundType) =
         let lower = createBound lowerValue lowerBoundType
         let upper = createBound upperValue upperBoundType
-        Range.create (Some lower) (Some upper)
+        Range.create lower upper
 
     /// Creates a range that contains a single value.
     [<Extension>]
@@ -121,27 +120,27 @@ type RangeExt =
 
     /// Indicates whether this range has a lower bound.
     [<Extension>]
-    static member HasLowerBound(range) = range._LowerOpt.IsSome
+    static member HasLowerBound(range) = range._Lower <> Unbounded
 
     /// Value of this range's lower bound, if any.
     [<Extension>]
-    static member LowerBoundValue(range) = BoundOpt.value range._LowerOpt
+    static member LowerBoundValue(range) = Bound.value range._Lower
 
     /// Type of this range's lower bound, if any.
     [<Extension>]
-    static member LowerBoundType(range) = BoundOpt.boundType range._LowerOpt
+    static member LowerBoundType(range) = Bound.boundType range._Lower
 
     /// Indicates whether this range has a lower bound.
     [<Extension>]
-    static member HasUpperBound(range) = range._UpperOpt.IsSome
+    static member HasUpperBound(range) = range._Upper <> Unbounded
 
     /// Value of this range's upper bound, if any.
     [<Extension>]
-    static member UpperBoundValue(range) = BoundOpt.value range._UpperOpt
+    static member UpperBoundValue(range) = Bound.value range._Upper
 
     /// Type of this range's lower bound, if any.
     [<Extension>]
-    static member UpperBoundType(range) = BoundOpt.boundType range._UpperOpt
+    static member UpperBoundType(range) = Bound.boundType range._Upper
 
     /// Indicates whether this range contains the given value.
     [<Extension>]

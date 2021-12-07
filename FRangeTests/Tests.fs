@@ -11,15 +11,17 @@ module Generator =
 module Range =
 
     let arb<'t when 't : comparison> =
-        let genBoundOpt =
-            Generator.from<'t>
-                |> Gen.apply (Gen.elements [Inclusive; Exclusive])
-                |> Gen.optionOf
+        let genBound =
+            Gen.oneof [
+                Generator.from<'t> |> Gen.map Inclusive
+                Generator.from<'t> |> Gen.map Exclusive
+                Gen.constant Unbounded
+            ]
         let rec genRange =
             gen {
-                let! lowerOpt = genBoundOpt
-                let! upperOpt = genBoundOpt
-                match Range.tryCreate lowerOpt upperOpt with
+                let! lower = genBound
+                let! upper = genBound
+                match Range.tryCreate lower upper with
                     | Some range -> return range
                     | None -> return! genRange
             }
@@ -66,34 +68,35 @@ module Generators =
 
 module ``Range tests`` =
 
+    let private compare lower upper =
+        match lower, upper with
+            | Inclusive lower, Inclusive upper ->
+                lower <= upper
+            | Inclusive lower, Exclusive upper
+            | Exclusive lower, Inclusive upper
+            | Exclusive lower, Exclusive upper ->
+                lower < upper
+            | _ -> true                
+
     [<Property>]
-    let ``Lower value <= upper value`` (range : Range<int>) =
-        match range.LowerOpt, range.UpperOpt with
-            | Some lower, Some upper ->
-                lower.Value <= upper.Value
-            | _ -> true
+    let ``Lower value < or <= upper value`` (range : Range<int>) =
+        compare range.Lower range.Upper
 
     [<Property>]
     let ``DateTime type`` (range : Range<System.DateTime>) =
-        match range.LowerOpt, range.UpperOpt with
-            | Some lower, Some upper ->
-                lower.Value <= upper.Value
-            | _ -> true
+        compare range.Lower range.Upper
 
     [<Property>]
     let ``String type`` (range : Range<string>) =
-        match range.LowerOpt, range.UpperOpt with
-            | Some lower, Some upper ->
-                lower.Value <= upper.Value
-            | _ -> true
+        compare range.Lower range.Upper
 
     [<Property>]
     let ``Bounds are in or out of range`` (range : Range<int>) =
         let test = function
-            | Some (Inclusive x) -> range |> Range.contains x
-            | Some (Exclusive x) -> range |> Range.contains x |> not
-            | None -> true
-        test range.LowerOpt && test range.UpperOpt
+            | Inclusive x -> range |> Range.contains x
+            | Exclusive x -> range |> Range.contains x |> not
+            | Unbounded -> true
+        test range.Lower && test range.Upper
 
     [<Property>]
     let ``Bounded operators`` () =
@@ -163,13 +166,19 @@ module ``Union tests`` =
 
     [<Property>]
     let ``Union merges adjancent ranges`` (triplet : Triplet<int>) =
-        let boundAOpt = triplet.AOpt |> Option.map Inclusive
-        let boundCOpt = triplet.COpt |> Option.map Inclusive
-        let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
-        let rangeABExcl = Range.create boundAOpt (Some (Exclusive triplet.B))
-        let rangeBCIncl = Range.create (Some (Inclusive triplet.B)) boundCOpt
-        let rangeBCExcl = Range.create (Some (Exclusive triplet.B)) boundCOpt
-        let rangeAC = Range.create boundAOpt boundCOpt
+        let boundA =
+            triplet.AOpt
+                |> Option.map Inclusive
+                |> Option.defaultValue Unbounded
+        let boundC =
+            triplet.COpt
+                |> Option.map Inclusive
+                |> Option.defaultValue Unbounded
+        let rangeABIncl = Range.create boundA (Inclusive triplet.B)
+        let rangeABExcl = Range.create boundA (Exclusive triplet.B)
+        let rangeBCIncl = Range.create (Inclusive triplet.B) boundC
+        let rangeBCExcl = Range.create (Exclusive triplet.B) boundC
+        let rangeAC = Range.create boundA boundC
         Range.union [rangeABIncl] [rangeBCIncl] = [rangeAC]
             && Range.union [rangeABIncl] [rangeBCExcl] = [rangeAC]
             && Range.union [rangeABExcl] [rangeBCIncl] = [rangeAC]
@@ -219,12 +228,18 @@ module ``Intersection tests`` =
 
     [<Property>]
     let ``Intersection of adjancent ranges is a point at most`` (triplet : Triplet<int>) =
-        let boundAOpt = triplet.AOpt |> Option.map Inclusive
-        let boundCOpt = triplet.COpt |> Option.map Inclusive
-        let rangeABIncl = Range.create boundAOpt (Some (Inclusive triplet.B))
-        let rangeABExcl = Range.create boundAOpt (Some (Exclusive triplet.B))
-        let rangeBCIncl = Range.create (Some (Inclusive triplet.B)) boundCOpt
-        let rangeBCExcl = Range.create (Some (Exclusive triplet.B)) boundCOpt
+        let boundA =
+            triplet.AOpt
+                |> Option.map Inclusive
+                |> Option.defaultValue Unbounded
+        let boundC =
+            triplet.COpt
+                |> Option.map Inclusive
+                |> Option.defaultValue Unbounded
+        let rangeABIncl = Range.create boundA (Inclusive triplet.B)
+        let rangeABExcl = Range.create boundA (Exclusive triplet.B)
+        let rangeBCIncl = Range.create (Inclusive triplet.B) boundC
+        let rangeBCExcl = Range.create (Exclusive triplet.B) boundC
         let rangeB = Range.singleton triplet.B
         Range.intersection [rangeABIncl] [rangeBCIncl] = [rangeB]
             && Range.intersection [rangeABIncl] [rangeBCExcl] = []
