@@ -56,8 +56,9 @@ module private BoundDir =
     /// * An infinite lower bound is less than any other bound.
     /// * An infinite upper bound is more than any other bound.
     /// * Finite bonds are sorted by value.
-    /// * An inclusive bound is extends farther in its direction than
+    /// * An inclusive bound extends farther in its direction than
     ///   an exclusive bound of the same value.
+    /// * The given tie-breaker value.
     let sortProjection tieBreaker boundDir =
         match boundDir.BoundOpt with
             | None ->
