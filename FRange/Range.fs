@@ -105,11 +105,16 @@ module Range =
     /// Merges the given ranges where possible. The result is a normalized
     /// list of ranges, even if no merges occurred.
     let merge ranges =
+
+            // sort bounds so that an {in,ex}clusive upper bound overlaps
+            // (and thus merges with) an {ex,in}clusive lower bound of the
+            // same value
         let boundDirs =
             ranges
                 |> toBoundDirs
                 |> Seq.sortBy (fun boundDir ->
                     boundDir |> BoundDir.sortProjection boundDir.Direction)
+
         let activeCount, lowerBoundOpt, outRanges =
             ((0, None, []), boundDirs)
                 ||> Seq.fold (fun (activeCount, lowerBoundOpt, outRanges) boundDir ->
@@ -117,6 +122,7 @@ module Range =
 
                             // lower bound activates its range
                         | BoundType.Lower ->
+
                                 // if no ranges currently active, this lower bound starts an output range
                             assert(activeCount >= 0)
                             let lowerBoundOpt' =
@@ -158,14 +164,20 @@ module Range =
 
     /// Determines the intersection of the given ranges.
     let intersection rangesA rangesB =
+
+            // sort bounds so that an {in,ex}clusive upper bound doesn't
+            // overlap (and thus doesn't intersect with) an {ex,in}clusive
+            // lower bound of the same value
         let pairs =
             toIndexedBoundDirs rangesA rangesB
                 |> Seq.sortBy (fun (boundDir, _) ->
                     boundDir
                         |> BoundDir.sortProjection (-1 * int boundDir.Direction))
+
         let activeCounts', lowerBoundOpt, outRanges =
             ((ImmutableArray.ToImmutableArray [| 0; 0 |], None, []), pairs)
                 ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
+                    assert((idx = 0) || (idx = 1))
                     match boundDir.Direction with
 
                             // lower bound activates its range
@@ -202,14 +214,18 @@ module Range =
     /// Determines the difference of the given ranges by removing
     /// everything in the second sequence from the first sequence.
     let difference rangesA rangesB =
+        
+            // sort bounds so that b-bounds cancel out matching a-bounds
         let pairs =
             toIndexedBoundDirs rangesA rangesB
                 |> Seq.sortBy (fun (boundDir, idx) ->
                     boundDir
                         |> BoundDir.sortProjection (idx * int boundDir.Direction))
+
         let activeCounts', lowerBoundOpt, outRanges =
             ((ImmutableArray.ToImmutableArray [| 0; 0 |], None, []), pairs)
                 ||> Seq.fold (fun (activeCounts, lowerBoundOpt, outRanges) (boundDir, idx) ->
+                    assert((idx = 0) || (idx = 1))
 
                     let activeCounts' =
                         activeCounts.SetItem(
