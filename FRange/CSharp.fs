@@ -1,6 +1,8 @@
 ﻿namespace FRange.CSharp
 
+open System
 open System.Runtime.CompilerServices
+
 open FRange
 
 /// Inclusive/exclusive bound type.
@@ -63,7 +65,7 @@ type Range private () =
         Range.infinite
 
 /// A collection of ranges.
-type MultiRange<'t when 't : comparison>(ranges : seq<Range<'t>>) =
+type MultiRange<'t when 't : comparison and 't :> IComparable<'t>>(ranges : seq<Range<'t>>) =
 
     /// Ranges in this collection.
     member _.Ranges = ranges

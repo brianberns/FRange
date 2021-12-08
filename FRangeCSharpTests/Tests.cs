@@ -6,8 +6,8 @@ using Range = FRange.CSharp.Range;   // resolve conflict with System.Range
 [TestClass]
 public class Tests
 {
-    private void AssertEquivalent<T>(MultiRange<T> mrA, MultiRange<T> mrB)
-    {
+    private void AssertEquivalent<T>(MultiRange<T> mrA, MultiRange<T> mrB) where T : IComparable<T>
+    {   
         Assert.IsTrue(mrA.IsEquivalent(mrB), mrB.ToString());
     }
 

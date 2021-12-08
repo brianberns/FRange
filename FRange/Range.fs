@@ -1,5 +1,6 @@
 ﻿namespace FRange
 
+open System
 open System.Collections.Immutable
 
 /// A range of values, optionally bounded in one or both directions.
@@ -8,7 +9,7 @@ open System.Collections.Immutable
 /// * 2 < x <= 4
 /// * 5 < x
 [<NoComparison>]
-type Range<'t when 't : comparison> =
+type Range<'t when 't : comparison and 't :> IComparable<'t>> =
     private {
 
         /// Lower bound.
@@ -74,7 +75,7 @@ module Range =
         create bound bound
 
     /// A range that's infinite (i.e. unbounded) in both directions.
-    let infinite<'t when 't : comparison> : Range<'t> =
+    let infinite<'t when 't : comparison and 't :> IComparable<'t>> : Range<'t> =
         create Unbounded Unbounded
 
     /// Indicates whether the given range contains the given value.

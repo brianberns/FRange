@@ -1,5 +1,7 @@
 ﻿namespace FRange
 
+open System
+
 /// An inclusive or exclusive bound at a specific value, or the lack
 /// of a bound.
 [<NoComparison>]
@@ -29,7 +31,7 @@ type private BoundType =
 
 /// Internal representation of a directed bound within a range.
 /// this is used to sort bounds.
-type private BoundDir<'t when 't : comparison> =
+type private BoundDir<'t when 't :> IComparable<'t>> =
     {
         /// Bound in this direction..
         Bound: Bound<'t>

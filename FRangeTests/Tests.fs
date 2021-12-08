@@ -2,6 +2,8 @@ namespace FRange
 
 #nowarn "40"   // allow recursive values
 
+open System
+
 open FsCheck
 open FsCheck.Xunit
 
@@ -10,7 +12,7 @@ module Generator =
 
 module Range =
 
-    let arb<'t when 't : comparison> =
+    let arb<'t when 't : comparison and 't :> IComparable<'t>> =
         let genBound =
             Gen.oneof [
                 Generator.from<'t> |> Gen.map Inclusive
@@ -27,7 +29,7 @@ module Range =
             }
         genRange |> Arb.fromGen
 
-type Triplet<'t when 't : comparison> =
+type Triplet<'t when 't : comparison and 't :> IComparable<'t>> =
     {
         AOpt : Option<'t>
         B : 't
@@ -127,7 +129,7 @@ module ``Merge tests`` =
 
     [<Property>]
     let ``Merge of no ranges is empty`` () =
-        Range.merge [] = []
+        Range.merge List.empty<Range<int>> = List.empty<Range<int>>
 
     [<Property>]
     let ``Merge of range by itself is self`` (range : Range<int>) =
