@@ -31,7 +31,7 @@ type private BoundType =
 
 /// Internal representation of a directed bound within a range.
 /// this is used to sort bounds.
-type private BoundDir<'t when 't :> IComparable<'t>> =
+type private BoundDir<'t when 't : comparison and 't :> IComparable<'t>> =
     {
         /// Bound in this direction..
         Bound: Bound<'t>
