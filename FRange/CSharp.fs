@@ -11,7 +11,7 @@ type BoundType =
     /// Bound is inclusive. E.g. x <= 3.
     | Inclusive = 1
 
-    /// Bound is exclusive. E.g. x <= 3.
+    /// Bound is exclusive. E.g. x < 3.
     | Exclusive = 0
 
 module private Bound =
