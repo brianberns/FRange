@@ -118,6 +118,17 @@ module ``Range tests`` =
             && Range.difference [rangeA] [rangeB] = [!-+ -1]
             && Range.difference [rangeB] [rangeA] = [!*- 1]
 
+    [<Property>]
+    let ``Psuedo-empty`` () =
+        let rangeA = 0 +-+ 1
+        let rangeB = 2 +-+ 3
+        let weird =  1 *-* 2
+        let full = Range.union [ rangeA; rangeB ] [ weird ]
+        let partial = Range.union [ rangeA ] [ rangeB ]
+        full.Length = 1
+            && partial.Length = 2
+            && full <> partial
+
 module ``Merge tests`` =
 
     [<Property>]
