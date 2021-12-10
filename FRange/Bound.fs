@@ -33,7 +33,7 @@ type private BoundType =
 /// this is used to sort bounds.
 type private BoundDir<'t when 't : comparison and 't :> IComparable<'t>> =
     {
-        /// Bound in this direction..
+        /// Bound in this direction.
         Bound: Bound<'t>
 
         /// Lower vs. upper bound.
