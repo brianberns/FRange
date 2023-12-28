@@ -10,6 +10,7 @@
     <PackageProjectUrl>https://github.com/brianberns/FRange</PackageProjectUrl>
     <RepositoryUrl>https://github.com/brianberns/FRange</RepositoryUrl>
     <PackageIcon>ledfoot.png</PackageIcon>
+	<PackageReadmeFile>README.md</PackageReadmeFile>	  	
     <PackageTags>range</PackageTags>
     <Version>1.1</Version>
   </PropertyGroup>
@@ -18,6 +19,7 @@
     <Compile Include="Bound.fs" />
     <Compile Include="Range.fs" />
     <Compile Include="CSharp.fs" />
+	<None Include="..\README.md" Pack="true" PackagePath="\"/>
     <None Include="..\ledfoot.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
@@ -27,7 +29,5 @@
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
-
-  <ItemGroup />
 
 </Project>
